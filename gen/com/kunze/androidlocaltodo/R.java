@@ -24,6 +24,7 @@ public final class R {
         public static final int ic_launcher=0x7f020000;
     }
     public static final class id {
+        public static final int action_delete_database=0x7f080003;
         public static final int action_load_astrid=0x7f080002;
         public static final int action_settings=0x7f080001;
         public static final int task_list=0x7f080000;
@@ -35,6 +36,7 @@ public final class R {
         public static final int task_list=0x7f070000;
     }
     public static final class string {
+        public static final int action_delete_database=0x7f050004;
         public static final int action_load_astrid=0x7f050002;
         public static final int action_settings=0x7f050001;
         public static final int app_name=0x7f050000;
