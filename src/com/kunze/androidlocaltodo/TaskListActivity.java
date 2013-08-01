@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -111,9 +112,21 @@ public class TaskListActivity extends Activity {
     		
     		// Parse the tasks in the task list
     		errText = "Could not parse task list";
-    		String taskLines[] = tasksString.split("\n");
-    		taskLines = Arrays.copyOfRange(taskLines, 1, taskLines.length);
-    		List<String> tasks = new LinkedList<String>();
+    		List<String> taskLines = new LinkedList<String>(Arrays.asList(tasksString.split("\n")));
+    		// Remove the header row
+    		taskLines.remove(0);
+    		// Some tasks have newlines in quotes, so we have to adjust for that.
+    		ListIterator<String> it = taskLines.listIterator();
+    		while (it.hasNext())
+    		{
+    			String task = it.next();
+    			while (CountQuotes(task) % 2 == 1)
+    			{
+    				task += it.next();
+    				it.remove();
+    			}
+    		} 
+     		List<String> tasks = new LinkedList<String>();
     		for (String taskLine : taskLines) {
 				String taskFields[] = taskLine.split(",");
 				tasks.add(taskFields[0]);
@@ -129,6 +142,26 @@ public class TaskListActivity extends Activity {
     		AlertDialog dlg = errorBuilder.setMessage(e.getMessage()).create();
     		dlg.show();
     	}
+    }
+    
+    static private int CountQuotes(String string)
+    {
+    	int count = 0;
+    	for (int i = 0; i < string.length(); ++i) 
+    	{
+			switch (string.charAt(i))
+			{
+			case '\\':
+				++i;
+				break;
+			case '\"':
+				++count;
+				break;
+			default:
+				// Nothing
+			}
+		}
+    	return count;
     }
     
 }
