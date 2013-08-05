@@ -21,6 +21,7 @@ import android.support.v4.widget.CursorAdapter;
 import android.support.v4.widget.SimpleCursorAdapter;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Adapter;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.ListAdapter;
@@ -33,15 +34,7 @@ public class TaskListActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_task_list);
-
-        // Get a cursor to populate the UI
-		Cursor cursor = mDB.GetCursor();
-		String from[] = { "NAME" };
-		int to[] = { android.R.id.text1 };
-		CursorAdapter adapter = new SimpleCursorAdapter(this, android.R.layout.simple_list_item_1, cursor, from, to, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
-		ListView listView = (ListView)findViewById(R.id.task_list);
-		listView.setAdapter(adapter);
-		
+        ConnectViewAdapter();
     }
 
 
@@ -66,19 +59,35 @@ public class TaskListActivity extends Activity {
 		return true;
     }
     
+    private void ConnectViewAdapter()
+    {
+        // Get a cursor to populate the UI
+		Cursor cursor = mDB.GetCursor();
+		String from[] = { "NAME" };
+		int to[] = { android.R.id.text1 };
+		
+		mAdapter = new SimpleCursorAdapter(this, android.R.layout.simple_list_item_1, cursor, from, to, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
+		ListView listView = (ListView)findViewById(R.id.task_list);
+		listView.setAdapter(mAdapter);
+    }
+    
     private void DeleteDatabase()
     {
     	AlertDialog.Builder builder = new AlertDialog.Builder(this);
     	builder.setTitle("WARNING!");
     	builder.setMessage("This will delete all of your data!  Are you sure?");
-    	builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+    	builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() 
+    	{
 			
 			@Override
-			public void onClick(DialogInterface dialog, int which) {
+			public void onClick(DialogInterface dialog, int which) 
+			{
 				mDB.Remove();
+		        ConnectViewAdapter();
 			}
 		});
-    	builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+    	builder.setNegativeButton("No", new DialogInterface.OnClickListener() 
+    	{
 			
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
@@ -174,6 +183,7 @@ public class TaskListActivity extends Activity {
 			}
     		
     		zipStream.close();
+	        ConnectViewAdapter();
     	}
     	catch (Exception e)
     	{
@@ -203,4 +213,5 @@ public class TaskListActivity extends Activity {
     }
     
     private TaskDatabase mDB = new TaskDatabase(this);
+    private CursorAdapter mAdapter = null;
 }
