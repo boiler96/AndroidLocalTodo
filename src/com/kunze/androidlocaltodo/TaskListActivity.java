@@ -14,19 +14,13 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.support.v4.widget.CursorAdapter;
 import android.support.v4.widget.SimpleCursorAdapter;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Adapter;
-import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
-import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.TextView;
 
 public class TaskListActivity extends Activity {
 
@@ -34,7 +28,7 @@ public class TaskListActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_task_list);
-        ConnectViewAdapter();
+        InitializeView();
     }
 
 
@@ -59,7 +53,14 @@ public class TaskListActivity extends Activity {
 		return true;
     }
     
-    private void ConnectViewAdapter()
+    private void RefreshView()
+    {
+        // Get a cursor to populate the UI
+		Cursor cursor = mDB.GetCursor();
+		mAdapter.changeCursor(cursor);
+	}
+    
+    private void InitializeView()
     {
         // Get a cursor to populate the UI
 		Cursor cursor = mDB.GetCursor();
@@ -83,7 +84,7 @@ public class TaskListActivity extends Activity {
 			public void onClick(DialogInterface dialog, int which) 
 			{
 				mDB.Remove();
-		        ConnectViewAdapter();
+				RefreshView();
 			}
 		});
     	builder.setNegativeButton("No", new DialogInterface.OnClickListener() 
@@ -103,6 +104,8 @@ public class TaskListActivity extends Activity {
     	String loc = Environment.getExternalStorageDirectory() + "/AstridImport/";
     	AlertDialog.Builder errorBuilder = new AlertDialog.Builder(this);
     	errorBuilder.setTitle("Error reading Astrid Import!");
+    	ZipInputStream zipStream = null;
+		InputStream stream = null;
     	try
     	{
     		// Try to safely open the file
@@ -127,8 +130,8 @@ public class TaskListActivity extends Activity {
     		
     		// Try to unzip the file and unpack the tasks
     		errText = "Could not unzip file " + astridFile.getAbsolutePath();
-    		InputStream stream = new FileInputStream(astridFile);
-    		ZipInputStream zipStream = new ZipInputStream(stream);
+    		stream = new FileInputStream(astridFile);
+    		zipStream = new ZipInputStream(stream);
     		
     		ZipEntry tasksEntry = null;
     		while ((tasksEntry = zipStream.getNextEntry()) != null)
@@ -182,13 +185,32 @@ public class TaskListActivity extends Activity {
 				mDB.AddTask(taskFields[0]);
 			}
     		
-    		zipStream.close();
-	        ConnectViewAdapter();
+			RefreshView();
     	}
     	catch (Exception e)
     	{
     		AlertDialog dlg = errorBuilder.setMessage(e.getMessage()).create();
     		dlg.show();
+    	}
+    	finally
+    	{
+	    	
+			try
+			{
+		    	if (zipStream != null)
+		    	{
+	    			zipStream.close();
+	    		}
+		    	if (stream != null)
+		    	{
+		    		stream.close();
+		    	}
+	    	}
+	    	catch (Exception e)
+	    	{
+	    		AlertDialog dlg = errorBuilder.setMessage(e.getMessage()).create();
+	    		dlg.show();
+	    	}
     	}
     }
     
