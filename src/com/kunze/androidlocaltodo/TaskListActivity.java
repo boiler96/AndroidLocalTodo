@@ -3,10 +3,13 @@ package com.kunze.androidlocaltodo;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -174,15 +177,76 @@ public class TaskListActivity extends Activity {
                 String task = it.next();
                 while (CountQuotes(task) % 2 == 1)
                 {
-                    task += it.next();
                     it.remove();
+                    task += it.next();
                 }
+                it.set(task);
             } 
-            List<String> tasks = new LinkedList<String>();
             for (String taskLine : taskLines) {
-                String taskFields[] = taskLine.split(",");
-                tasks.add(taskFields[0]);
-                mDB.AddTask(taskFields[0]);
+                List<String> taskFields = new LinkedList<String>(Arrays.asList(taskLine.split(",", -1)));
+                // Some tasks have commas in quotes, so we have to adjust for that.
+                it = taskFields.listIterator();
+                while (it.hasNext())
+                {
+                    String field = it.next();
+                    while (CountQuotes(field) % 2 == 1)
+                    {
+                        it.remove();
+                        field += it.next();
+                    }
+                    it.set(field);
+                }
+                
+                TaskDatabase.Task taskElement = new TaskDatabase.Task();
+                taskElement.mName = taskFields.get(0);
+                taskElement.mDescription = taskFields.get(8);
+                
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
+
+                taskElement.mDueDate = dateFormat.parse(taskFields.get(4));
+                String completedString = taskFields.get(9); 
+                if (completedString.equals(""))
+                {
+                    taskElement.mCompletedDate = new Date(0);
+                }
+                else
+                {
+                    taskElement.mCompletedDate = dateFormat.parse(completedString);
+                }
+                taskElement.mRepeatUnit = TaskDatabase.Task.RepeatUnit.NONE;
+                taskElement.mRepeatTime = 0;
+                String repeatString = taskFields.get(6);
+                String repeatFields[] = repeatString.split(":");
+                if (repeatFields[0].equals("RRULE"))
+                {
+                    repeatFields = repeatFields[1].split(";");
+                    String freqFields[] = repeatFields[0].split("=");
+                    if (freqFields[0].equals("FREQ"))
+                    {
+                        if (freqFields[1].equals("YEARLY"))
+                        {
+                            taskElement.mRepeatUnit = TaskDatabase.Task.RepeatUnit.YEARS;
+                        }
+                        else if (freqFields[1].equals("MONTHLY"))
+                        {
+                            taskElement.mRepeatUnit = TaskDatabase.Task.RepeatUnit.MONTHS;
+                        }
+                        else if (freqFields[1].equals("WEEKLY"))
+                        {
+                            taskElement.mRepeatUnit = TaskDatabase.Task.RepeatUnit.WEEKS;
+                        }
+                        else if (freqFields[1].equals("DAILY"))
+                        {
+                            taskElement.mRepeatUnit = TaskDatabase.Task.RepeatUnit.DAYS;
+                        }
+                    }
+                    freqFields = repeatFields[1].split("=");
+                    if (freqFields[0].equals("INTERVAL"))
+                    {
+                        taskElement.mRepeatTime = Integer.valueOf(freqFields[1]);
+                    }
+                }
+                mDB.AddTask(taskElement);
             }
 
             RefreshView();
