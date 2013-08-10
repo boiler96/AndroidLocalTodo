@@ -38,6 +38,8 @@ public class TaskDatabase extends SQLiteOpenHelper {
     private static final String DB_TASK_REPEAT_TIME     = "REPEAT_TIME";
     private static final String DB_ID                   = "_id";
 
+    private static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
+
     private static final String DB_TABLE_CREATE =
             "CREATE TABLE " + DB_TABLE_NAME + " (" +
                     DB_TASK_NAME + " TEXT, " +
@@ -47,8 +49,8 @@ public class TaskDatabase extends SQLiteOpenHelper {
                     DB_TASK_REPEAT_UNIT + " TEXT, " +
                     DB_TASK_REPEAT_TIME + " INTEGER, " +
                     DB_ID + " AUTONUMBER);";
-
-    private static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
+    private static final String DB_WHERE = DB_TASK_COMPLETED_DATE + "='" + DATE_FORMAT.format(new Date(0)) + "'"; 
+    private static final String DB_ORDER_BY = DB_TASK_DUE_DATE + " ASC";             
 
     public TaskDatabase(Context context) 
     {
@@ -86,7 +88,7 @@ public class TaskDatabase extends SQLiteOpenHelper {
     public Cursor GetCursor()
     {
         SQLiteDatabase db = getReadableDatabase();
-        return db.query(DB_TABLE_NAME, null, null, null, null, null, null);
+        return db.query(DB_TABLE_NAME, null, DB_WHERE, null, null, null, DB_ORDER_BY);
     }
 
     public void Remove()

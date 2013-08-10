@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,11 +20,15 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.support.v4.widget.CursorAdapter;
 import android.support.v4.widget.SimpleCursorAdapter;
+import android.support.v4.widget.SimpleCursorAdapter.ViewBinder;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ListView;
+import android.widget.TextView;
 
 public class TaskListActivity extends Activity {
 
@@ -67,10 +72,64 @@ public class TaskListActivity extends Activity {
     {
         // Get a cursor to populate the UI
         Cursor cursor = mDB.GetCursor();
-        String from[] = { "NAME" };
-        int to[] = { android.R.id.text1 };
+        String from[] = { "NAME", "DUE_DATE" };
+        int to[] = { R.id.task_name, R.id.task_due_date };
 
-        mAdapter = new SimpleCursorAdapter(this, android.R.layout.simple_list_item_1, cursor, from, to, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
+        mAdapter = new SimpleCursorAdapter(this, R.layout.task_list_element, cursor, from, to, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
+        
+        // Set up a ViewBinder to convert the due date to something more human-friendly
+        mAdapter.setViewBinder(new ViewBinder() {
+            @Override
+            public boolean setViewValue(View view, Cursor cursor, int columnIndex) {
+                try
+                {
+                    if (columnIndex == 2)
+                    {
+                        String dueDateString = cursor.getString(columnIndex);
+                        SimpleDateFormat dateFormatDB = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
+                        SimpleDateFormat dateFormatDisplay = new SimpleDateFormat("MM-dd-yyyy", Locale.US);
+                        Date dueDate = dateFormatDB.parse(dueDateString);
+                        TextView dueDateView = (TextView)view;
+                        Date now = new Date();
+                        Calendar calendar = Calendar.getInstance();
+                        calendar.setTime(dueDate);
+                        long dayDiff = (now.getTime() - dueDate.getTime()) / 1000 / 60 / 60 / 24;
+                        if (dayDiff == 0)
+                        {
+                            dueDateView.setText("Today");
+                            dueDateView.setTextColor(Color.RED);
+                        }
+                        else if (dueDate.before(now))
+                        {
+                            dueDateView.setText("+ " + dayDiff + " days!");
+                            dueDateView.setTextColor(Color.RED);
+                        }
+                        else if (dayDiff > -7)
+                        {
+                            dueDateView.setText(calendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.US));
+                            dueDateView.setTextColor(Color.BLACK);
+                        }
+                        else if (dayDiff > -14)
+                        {
+                            dueDateView.setText("Next " + calendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.US));
+                            dueDateView.setTextColor(Color.BLACK);
+                        }
+                        else
+                        {
+                            dueDateView.setText(dateFormatDisplay.format(dueDate));
+                            dueDateView.setTextColor(Color.BLACK);
+                        }
+                        return true;
+                    }
+                } catch (Exception e)
+                {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(TaskListActivity.this); 
+                    AlertDialog dlg = builder.setTitle("Database error!").setMessage(e.getMessage()).create();
+                    dlg.show();
+                }
+                return false;
+            }
+        });
         ListView listView = (ListView)findViewById(R.id.task_list);
         listView.setAdapter(mAdapter);
     }
@@ -299,5 +358,5 @@ public class TaskListActivity extends Activity {
     }
 
     private TaskDatabase mDB = new TaskDatabase(this);
-    private CursorAdapter mAdapter = null;
+    private SimpleCursorAdapter mAdapter = null;
 }
