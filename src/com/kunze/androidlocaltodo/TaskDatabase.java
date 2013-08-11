@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -93,6 +94,27 @@ public class TaskDatabase extends SQLiteOpenHelper {
     {
         SQLiteDatabase db = getReadableDatabase();
         return db.query(DB_TABLE_NAME, null, DB_WHERE, null, null, null, DB_ORDER_BY);
+    }
+    
+    public Task LoadTask(Cursor cursor)
+    {
+        Task task = new Task();
+        try
+        {
+            task.mName = cursor.getString(0);
+            task.mDescription = cursor.getString(1);
+            task.mDueDate = DATE_FORMAT.parse(cursor.getString(2));
+            task.mCompletedDate = DATE_FORMAT.parse(cursor.getString(3));
+            task.mRepeatUnit = Task.RepeatUnit.valueOf(cursor.getString(4));
+            task.mRepeatTime = cursor.getInt(5);
+            task.mRepeatFromComplete = cursor.getInt(6) == 1;
+            task.mID = cursor.getLong(7);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        return task;
     }
 
     public void Remove()

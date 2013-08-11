@@ -18,19 +18,25 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.support.v4.widget.CursorAdapter;
 import android.support.v4.widget.SimpleCursorAdapter;
 import android.support.v4.widget.SimpleCursorAdapter.ViewBinder;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
-public class TaskListActivity extends Activity {
+public class TaskListActivity extends Activity implements OnItemClickListener {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,10 +76,14 @@ public class TaskListActivity extends Activity {
 
     private void InitializeView()
     {
+        // Set up event handlers for the task list
+        ListView listView = (ListView)findViewById(R.id.task_list);
+        listView.setOnItemClickListener(this);
+        
         // Get a cursor to populate the UI
         Cursor cursor = mDB.GetCursor();
         String from[] = { "NAME", "DUE_DATE" };
-        int to[] = { R.id.task_name, R.id.task_due_date };
+        int to[] = { R.id.task_name_edit, R.id.task_due_date };
 
         mAdapter = new SimpleCursorAdapter(this, R.layout.task_list_element, cursor, from, to, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
         
@@ -130,7 +140,6 @@ public class TaskListActivity extends Activity {
                 return false;
             }
         });
-        ListView listView = (ListView)findViewById(R.id.task_list);
         listView.setAdapter(mAdapter);
     }
 
@@ -364,6 +373,33 @@ public class TaskListActivity extends Activity {
             }
         }
         return count;
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        Cursor cursor = (Cursor)parent.getItemAtPosition(position);
+        TaskDatabase.Task task = mDB.LoadTask(cursor);
+        
+        LayoutInflater inflater = this.getLayoutInflater();
+        View dlgView = inflater.inflate(R.layout.dialog_task, null);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(dlgView);
+        builder.setTitle("Task");
+        builder.setNegativeButton("Cancel", new OnClickListener()
+        {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+            }
+        });
+        
+        TextView nameEdit = (TextView)dlgView.findViewById(R.id.task_name_edit);
+        nameEdit.setText(task.mName);
+        TextView descriptionEdit = (TextView)dlgView.findViewById(R.id.task_description_edit);
+        descriptionEdit.setText(task.mDescription);
+        SimpleDateFormat dateFormatDisplay = new SimpleDateFormat("MM-dd-yyyy", Locale.US);
+        TextView dueDateEdit = (TextView)dlgView.findViewById(R.id.task_due_date_edit);
+        dueDateEdit.setText(dateFormatDisplay.format(task.mDueDate));
+        builder.show();
     }
 
     private TaskDatabase mDB = new TaskDatabase(this);

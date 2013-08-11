@@ -7,7 +7,7 @@
     android:padding="4dp" >
 
     <TextView
-        android:id="@+id/task_name"
+        android:id="@+id/task_name_edit"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="left|center_vertical"
