@@ -23,20 +23,22 @@ public class TaskDatabase extends SQLiteOpenHelper {
         public Date       mCompletedDate;
         public RepeatUnit mRepeatUnit;
         public int        mRepeatTime;
+        public Boolean    mRepeatFromComplete;
         public long       mID;
         
     }
 
-    private static final String DB_NAME		            = "TASK_DATABASE";
-    private static final int 	DB_VERSION	            = 1;
-    private static final String DB_TABLE_NAME           = "TASKS";
-    private static final String DB_TASK_NAME            = "NAME";
-    private static final String DB_TASK_DESCRIPTION     = "DESCRIPTION";
-    private static final String DB_TASK_DUE_DATE        = "DUE_DATE";
-    private static final String DB_TASK_COMPLETED_DATE  = "COMPLETED_DATE";
-    private static final String DB_TASK_REPEAT_UNIT     = "REPEAT_UNIT";
-    private static final String DB_TASK_REPEAT_TIME     = "REPEAT_TIME";
-    private static final String DB_ID                   = "_id";
+    private static final String DB_NAME		                 = "TASK_DATABASE";
+    private static final int 	DB_VERSION	                 = 1;
+    private static final String DB_TABLE_NAME                = "TASKS";
+    private static final String DB_TASK_NAME                 = "NAME";
+    private static final String DB_TASK_DESCRIPTION          = "DESCRIPTION";
+    private static final String DB_TASK_DUE_DATE             = "DUE_DATE";
+    private static final String DB_TASK_COMPLETED_DATE       = "COMPLETED_DATE";
+    private static final String DB_TASK_REPEAT_UNIT          = "REPEAT_UNIT";
+    private static final String DB_TASK_REPEAT_TIME          = "REPEAT_TIME";
+    private static final String DB_TASK_REPEAT_FROM_COMPLETE = "REPEAT_FROM_COMPLETE";
+    private static final String DB_ID                        = "_id";
 
     private static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
 
@@ -48,6 +50,7 @@ public class TaskDatabase extends SQLiteOpenHelper {
                     DB_TASK_COMPLETED_DATE + " TEXT, " +
                     DB_TASK_REPEAT_UNIT + " TEXT, " +
                     DB_TASK_REPEAT_TIME + " INTEGER, " +
+                    DB_TASK_REPEAT_FROM_COMPLETE + " INTEGER, " +
                     DB_ID + " AUTONUMBER);";
     private static final String DB_WHERE = DB_TASK_COMPLETED_DATE + "='" + DATE_FORMAT.format(new Date(0)) + "'"; 
     private static final String DB_ORDER_BY = DB_TASK_DUE_DATE + " ASC";             
@@ -81,6 +84,7 @@ public class TaskDatabase extends SQLiteOpenHelper {
         vals.put(DB_TASK_COMPLETED_DATE, DATE_FORMAT.format(task.mCompletedDate));
         vals.put(DB_TASK_REPEAT_UNIT, task.mRepeatUnit.toString());
         vals.put(DB_TASK_REPEAT_TIME, task.mRepeatTime);
+        vals.put(DB_TASK_REPEAT_FROM_COMPLETE, task.mRepeatFromComplete ? 1 : 0);
         db.insert(DB_TABLE_NAME, null, vals);
         db.close();
     }

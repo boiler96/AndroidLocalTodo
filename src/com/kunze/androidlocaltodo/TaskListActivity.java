@@ -274,6 +274,7 @@ public class TaskListActivity extends Activity {
                 }
                 taskElement.mRepeatUnit = TaskDatabase.Task.RepeatUnit.NONE;
                 taskElement.mRepeatTime = 0;
+                taskElement.mRepeatFromComplete = false;
                 String repeatString = taskFields.get(6);
                 String repeatFields[] = repeatString.split(":");
                 if (repeatFields[0].equals("RRULE"))
@@ -303,6 +304,14 @@ public class TaskListActivity extends Activity {
                     if (freqFields[0].equals("INTERVAL"))
                     {
                         taskElement.mRepeatTime = Integer.valueOf(freqFields[1]);
+                    }
+                    if (repeatFields.length > 2 && repeatFields[2] != null)
+                    {
+                        freqFields = repeatFields[2].split("=");
+                        if (freqFields[0].equals("FROM") && freqFields[1].equals("COMPLETION"))
+                        {
+                            taskElement.mRepeatFromComplete = true;
+                        }
                     }
                 }
                 mDB.AddTask(taskElement);
