@@ -52,7 +52,7 @@ public class TaskDatabase extends SQLiteOpenHelper {
                     DB_TASK_REPEAT_UNIT + " TEXT, " +
                     DB_TASK_REPEAT_TIME + " INTEGER, " +
                     DB_TASK_REPEAT_FROM_COMPLETE + " INTEGER, " +
-                    DB_ID + " AUTONUMBER);";
+                    DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT);";
     private static final String DB_WHERE = DB_TASK_COMPLETED_DATE + "='" + DATE_FORMAT.format(new Date(0)) + "'"; 
     private static final String DB_ORDER_BY = DB_TASK_DUE_DATE + " ASC";             
 
@@ -78,14 +78,7 @@ public class TaskDatabase extends SQLiteOpenHelper {
     public void AddTask(Task task)
     {
         SQLiteDatabase db = getWritableDatabase();
-        ContentValues vals = new ContentValues();
-        vals.put(DB_TASK_NAME, task.mName);
-        vals.put(DB_TASK_DESCRIPTION, task.mDescription);
-        vals.put(DB_TASK_DUE_DATE, DATE_FORMAT.format(task.mDueDate));
-        vals.put(DB_TASK_COMPLETED_DATE, DATE_FORMAT.format(task.mCompletedDate));
-        vals.put(DB_TASK_REPEAT_UNIT, task.mRepeatUnit.toString());
-        vals.put(DB_TASK_REPEAT_TIME, task.mRepeatTime);
-        vals.put(DB_TASK_REPEAT_FROM_COMPLETE, task.mRepeatFromComplete ? 1 : 0);
+        ContentValues vals = GetContentValues(task);
         db.insert(DB_TABLE_NAME, null, vals);
         db.close();
     }
@@ -116,11 +109,32 @@ public class TaskDatabase extends SQLiteOpenHelper {
         }
         return task;
     }
+    
+    public void SaveTask(Task task)
+    {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues vals = GetContentValues(task);
+        db.update(DB_TABLE_NAME, vals, DB_ID + "=" + task.mID, null);
+        db.close();
+    }
 
     public void Remove()
     {
         SQLiteDatabase db = getWritableDatabase();
         db.close();
         SQLiteDatabase.deleteDatabase(new File(db.getPath()));
+    }
+    
+    private ContentValues GetContentValues(Task task)
+    {
+        ContentValues vals = new ContentValues();
+        vals.put(DB_TASK_NAME, task.mName);
+        vals.put(DB_TASK_DESCRIPTION, task.mDescription);
+        vals.put(DB_TASK_DUE_DATE, DATE_FORMAT.format(task.mDueDate));
+        vals.put(DB_TASK_COMPLETED_DATE, DATE_FORMAT.format(task.mCompletedDate));
+        vals.put(DB_TASK_REPEAT_UNIT, task.mRepeatUnit.toString());
+        vals.put(DB_TASK_REPEAT_TIME, task.mRepeatTime);
+        vals.put(DB_TASK_REPEAT_FROM_COMPLETE, task.mRepeatFromComplete ? 1 : 0);
+        return vals;
     }
 }

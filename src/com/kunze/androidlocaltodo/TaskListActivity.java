@@ -32,8 +32,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.RadioButton;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 public class TaskListActivity extends Activity implements OnItemClickListener {
@@ -97,38 +102,9 @@ public class TaskListActivity extends Activity implements OnItemClickListener {
                     {
                         String dueDateString = cursor.getString(columnIndex);
                         SimpleDateFormat dateFormatDB = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
-                        SimpleDateFormat dateFormatDisplay = new SimpleDateFormat("MM-dd-yyyy", Locale.US);
                         Date dueDate = dateFormatDB.parse(dueDateString);
                         TextView dueDateView = (TextView)view;
-                        Date now = new Date();
-                        Calendar calendar = Calendar.getInstance();
-                        calendar.setTime(dueDate);
-                        long dayDiff = (now.getTime() - dueDate.getTime()) / 1000 / 60 / 60 / 24;
-                        if (dayDiff == 0)
-                        {
-                            dueDateView.setText("Today");
-                            dueDateView.setTextColor(Color.RED);
-                        }
-                        else if (dueDate.before(now))
-                        {
-                            dueDateView.setText("+ " + dayDiff + " days!");
-                            dueDateView.setTextColor(Color.RED);
-                        }
-                        else if (dayDiff > -7)
-                        {
-                            dueDateView.setText(calendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.US));
-                            dueDateView.setTextColor(Color.BLACK);
-                        }
-                        else if (dayDiff > -14)
-                        {
-                            dueDateView.setText("Next " + calendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.US));
-                            dueDateView.setTextColor(Color.BLACK);
-                        }
-                        else
-                        {
-                            dueDateView.setText(dateFormatDisplay.format(dueDate));
-                            dueDateView.setTextColor(Color.BLACK);
-                        }
+                        SetFriendlyDueDateText(dueDateView, dueDate);
                         return true;
                     }
                 } catch (Exception e)
@@ -378,28 +354,143 @@ public class TaskListActivity extends Activity implements OnItemClickListener {
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Cursor cursor = (Cursor)parent.getItemAtPosition(position);
-        TaskDatabase.Task task = mDB.LoadTask(cursor);
-        
+        final TaskDatabase.Task task = mDB.LoadTask(cursor);
+        ShowTaskDialog(task, new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+		        mDB.SaveTask(task);
+			}
+		});
+    }
+    
+    private void ShowTaskDialog(TaskDatabase.Task task, OnClickListener okListener)
+    {
         LayoutInflater inflater = this.getLayoutInflater();
         View dlgView = inflater.inflate(R.layout.dialog_task, null);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(dlgView);
         builder.setTitle("Task");
-        builder.setNegativeButton("Cancel", new OnClickListener()
-        {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-            }
-        });
+        builder.setNegativeButton("Cancel", null);
+        builder.setPositiveButton("OK", okListener);
         
         TextView nameEdit = (TextView)dlgView.findViewById(R.id.task_name_edit);
         nameEdit.setText(task.mName);
         TextView descriptionEdit = (TextView)dlgView.findViewById(R.id.task_description_edit);
         descriptionEdit.setText(task.mDescription);
-        SimpleDateFormat dateFormatDisplay = new SimpleDateFormat("MM-dd-yyyy", Locale.US);
-        TextView dueDateEdit = (TextView)dlgView.findViewById(R.id.task_due_date_edit);
-        dueDateEdit.setText(dateFormatDisplay.format(task.mDueDate));
+        TextView dueDateView = (TextView)dlgView.findViewById(R.id.task_due_date);
+        SetFriendlyDueDateText(dueDateView, task.mDueDate);
+        
+        CheckBox repeatCheck = (CheckBox)dlgView.findViewById(R.id.repeat);
+        repeatCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+				View dialog = (View)buttonView.getParent();
+				SetRepeatVisibility(dialog, isChecked);
+			}
+		});
+        
+        Boolean repeat = task.mRepeatTime != 0;
+        repeatCheck.setChecked(repeat);
+        SetRepeatVisibility(dlgView, repeat);
+
+        EditText repeatTimeEdit = (EditText)dlgView.findViewById(R.id.repeat_time);
+        repeatTimeEdit.setText(Integer.toString(task.mRepeatTime));
+        
+        Spinner repeatUnitSpinner = (Spinner)dlgView.findViewById(R.id.repeat_unit);
+        String[] repeatUnits = { "Days", "Weeks", "Months", "Years" };
+        repeatUnitSpinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, repeatUnits));
+        int repeatUnitPos = 0;
+        switch (task.mRepeatUnit)
+        {
+        case DAYS:
+        	repeatUnitPos = 0;
+        	break;
+        case WEEKS:
+        	repeatUnitPos = 1;
+        	break;
+        case MONTHS:
+        	repeatUnitPos = 2;
+        	break;
+        case YEARS:
+        	repeatUnitPos = 3;
+        	break;
+        case NONE:
+        	repeatUnitPos = 0;	
+        }
+        repeatUnitSpinner.setSelection(repeatUnitPos);
+        
+        RadioButton repeatFromComplete = (RadioButton)dlgView.findViewById(R.id.repeat_from_complete);
+        RadioButton repeatFromDue = (RadioButton)dlgView.findViewById(R.id.repeat_from_due);
+        if (task.mRepeatFromComplete)
+        {
+        	repeatFromComplete.setChecked(true);
+        }
+        else
+        {
+        	repeatFromDue.setChecked(true);
+        }
+
         builder.show();
+    }
+    
+    private void SetRepeatVisibility(View dialog, Boolean visible) {
+		View[] repeatViews = {
+			dialog.findViewById(R.id.repeat_label),
+			dialog.findViewById(R.id.repeat_time),
+			dialog.findViewById(R.id.repeat_unit),
+			dialog.findViewById(R.id.repeat_from_label),
+			dialog.findViewById(R.id.repeat_from),
+			dialog.findViewById(R.id.repeat_from_complete),
+			dialog.findViewById(R.id.repeat_from_due),
+			dialog.findViewById(R.id.repeat_top_divider),
+			dialog.findViewById(R.id.repeat_bottom_divider),
+		};
+		if (visible) {
+			for (View view : repeatViews) {
+				view.setVisibility(View.VISIBLE);
+			}
+		}
+		else {
+			for (View view : repeatViews) {
+				view.setVisibility(View.GONE);
+			}
+		}
+	}
+    
+    private void SetFriendlyDueDateText(TextView dueDateView, Date dueDate) {
+        SimpleDateFormat dateFormatDisplay = new SimpleDateFormat("MM-dd-yyyy", Locale.US);
+        Date now = new Date();
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(dueDate);
+        int zoneOffset = calendar.get(Calendar.ZONE_OFFSET);
+        long nowDay = (now.getTime() + zoneOffset) / 1000 / 60 / 60 / 24;
+        long dueDay = dueDate.getTime() / 1000 / 60 / 60 / 24;
+        long dayDiff = nowDay - dueDay;
+        if (dayDiff == 0)
+        {
+            dueDateView.setText("Today");
+            dueDateView.setTextColor(Color.RED);
+        }
+        else if (dueDate.before(now))
+        {
+            dueDateView.setText("+ " + dayDiff + " days!");
+            dueDateView.setTextColor(Color.RED);
+        }
+        else if (dayDiff > -7)
+        {
+            dueDateView.setText(calendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.US));
+            dueDateView.setTextColor(Color.BLACK);
+        }
+        else if (dayDiff > -14)
+        {
+            dueDateView.setText("Next " + calendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.US));
+            dueDateView.setTextColor(Color.BLACK);
+        }
+        else
+        {
+            dueDateView.setText(dateFormatDisplay.format(dueDate));
+            dueDateView.setTextColor(Color.BLACK);
+        }
     }
 
     private TaskDatabase mDB = new TaskDatabase(this);
