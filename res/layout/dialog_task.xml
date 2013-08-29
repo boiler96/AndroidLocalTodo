@@ -23,6 +23,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:hint="Enter task name"
+            android:imeOptions="actionDone"
             android:inputType="text" >
 
             <requestFocus />
@@ -81,6 +82,7 @@
 	        android:layout_width="83dp"
 	        android:layout_height="wrap_content"
 	        android:ems="10"
+            android:imeOptions="actionDone"
 	        android:inputType="number" />
 
 	    <Spinner

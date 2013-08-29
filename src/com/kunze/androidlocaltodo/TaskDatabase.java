@@ -2,6 +2,7 @@ package com.kunze.androidlocaltodo;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -20,8 +21,8 @@ public class TaskDatabase extends SQLiteOpenHelper {
 
         public String     mName;
         public String     mDescription;
-        public Date       mDueDate;
-        public Date       mCompletedDate;
+        public Calendar   mDueDate;
+        public Calendar   mCompletedDate;
         public RepeatUnit mRepeatUnit;
         public int        mRepeatTime;
         public Boolean    mRepeatFromComplete;
@@ -41,19 +42,17 @@ public class TaskDatabase extends SQLiteOpenHelper {
     private static final String DB_TASK_REPEAT_FROM_COMPLETE = "REPEAT_FROM_COMPLETE";
     private static final String DB_ID                        = "_id";
 
-    private static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
-
     private static final String DB_TABLE_CREATE =
             "CREATE TABLE " + DB_TABLE_NAME + " (" +
                     DB_TASK_NAME + " TEXT, " +
                     DB_TASK_DESCRIPTION + " TEXT, " +
-                    DB_TASK_DUE_DATE + " TEXT, " +
-                    DB_TASK_COMPLETED_DATE + " TEXT, " +
+                    DB_TASK_DUE_DATE + " INTEGER, " +
+                    DB_TASK_COMPLETED_DATE + " INTEGER, " +
                     DB_TASK_REPEAT_UNIT + " TEXT, " +
                     DB_TASK_REPEAT_TIME + " INTEGER, " +
                     DB_TASK_REPEAT_FROM_COMPLETE + " INTEGER, " +
                     DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT);";
-    private static final String DB_WHERE = DB_TASK_COMPLETED_DATE + "='" + DATE_FORMAT.format(new Date(0)) + "'"; 
+    private static final String DB_WHERE = DB_TASK_COMPLETED_DATE + "= 0"; 
     private static final String DB_ORDER_BY = DB_TASK_DUE_DATE + " ASC";             
 
     public TaskDatabase(Context context) 
@@ -96,8 +95,8 @@ public class TaskDatabase extends SQLiteOpenHelper {
         {
             task.mName = cursor.getString(0);
             task.mDescription = cursor.getString(1);
-            task.mDueDate = DATE_FORMAT.parse(cursor.getString(2));
-            task.mCompletedDate = DATE_FORMAT.parse(cursor.getString(3));
+            task.mDueDate = ConvertIntToDate(cursor.getInt(2));
+            task.mCompletedDate = ConvertIntToDate(cursor.getInt(3));
             task.mRepeatUnit = Task.RepeatUnit.valueOf(cursor.getString(4));
             task.mRepeatTime = cursor.getInt(5);
             task.mRepeatFromComplete = cursor.getInt(6) == 1;
@@ -130,11 +129,25 @@ public class TaskDatabase extends SQLiteOpenHelper {
         ContentValues vals = new ContentValues();
         vals.put(DB_TASK_NAME, task.mName);
         vals.put(DB_TASK_DESCRIPTION, task.mDescription);
-        vals.put(DB_TASK_DUE_DATE, DATE_FORMAT.format(task.mDueDate));
-        vals.put(DB_TASK_COMPLETED_DATE, DATE_FORMAT.format(task.mCompletedDate));
+        vals.put(DB_TASK_DUE_DATE, ConvertDateToInt(task.mDueDate));
+        vals.put(DB_TASK_COMPLETED_DATE, ConvertDateToInt(task.mCompletedDate));
         vals.put(DB_TASK_REPEAT_UNIT, task.mRepeatUnit.toString());
         vals.put(DB_TASK_REPEAT_TIME, task.mRepeatTime);
         vals.put(DB_TASK_REPEAT_FROM_COMPLETE, task.mRepeatFromComplete ? 1 : 0);
         return vals;
+    }
+    
+    public static Calendar ConvertIntToDate(int day)
+    {
+    	long ms = (long)day * 24 * 60 * 60 * 1000;
+    	Calendar date = Calendar.getInstance();
+    	date.setTimeInMillis(ms - date.get(Calendar.ZONE_OFFSET));
+    	return date;
+    }
+    
+    public static int ConvertDateToInt(Calendar date) {
+    	long ms = date.getTimeInMillis() + date.get(Calendar.ZONE_OFFSET);
+    	int day = (int)(ms / 1000 / 60 / 60 / 24);
+    	return day;
     }
 }

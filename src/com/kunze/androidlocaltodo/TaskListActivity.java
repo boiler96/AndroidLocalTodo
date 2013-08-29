@@ -33,8 +33,11 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.CalendarView;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.RadioButton;
@@ -100,9 +103,7 @@ public class TaskListActivity extends Activity implements OnItemClickListener {
                 {
                     if (columnIndex == 2)
                     {
-                        String dueDateString = cursor.getString(columnIndex);
-                        SimpleDateFormat dateFormatDB = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
-                        Date dueDate = dateFormatDB.parse(dueDateString);
+                    	Calendar dueDate = TaskDatabase.ConvertIntToDate(cursor.getInt(columnIndex));
                         TextView dueDateView = (TextView)view;
                         SetFriendlyDueDateText(dueDateView, dueDate);
                         return true;
@@ -247,15 +248,17 @@ public class TaskListActivity extends Activity implements OnItemClickListener {
                 
                 SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
 
-                taskElement.mDueDate = dateFormat.parse(taskFields.get(4));
-                String completedString = taskFields.get(9); 
+                taskElement.mDueDate = Calendar.getInstance(); 
+                taskElement.mDueDate.setTime(dateFormat.parse(taskFields.get(4)));
+                String completedString = taskFields.get(9);
+                taskElement.mCompletedDate = Calendar.getInstance();
                 if (completedString.equals(""))
                 {
-                    taskElement.mCompletedDate = new Date(0);
+                    taskElement.mCompletedDate.setTimeInMillis(0);
                 }
                 else
                 {
-                    taskElement.mCompletedDate = dateFormat.parse(completedString);
+                    taskElement.mCompletedDate.setTime(dateFormat.parse(completedString));
                 }
                 taskElement.mRepeatUnit = TaskDatabase.Task.RepeatUnit.NONE;
                 taskElement.mRepeatTime = 0;
@@ -359,6 +362,7 @@ public class TaskListActivity extends Activity implements OnItemClickListener {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 		        mDB.SaveTask(task);
+		        RefreshView();
 			}
 		});
     }
@@ -370,17 +374,35 @@ public class TaskListActivity extends Activity implements OnItemClickListener {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(dlgView);
         builder.setTitle("Task");
-        builder.setNegativeButton("Cancel", null);
-        builder.setPositiveButton("OK", okListener);
         
-        TextView nameEdit = (TextView)dlgView.findViewById(R.id.task_name_edit);
+        final TextView nameEdit = (TextView)dlgView.findViewById(R.id.task_name_edit);
         nameEdit.setText(task.mName);
-        TextView descriptionEdit = (TextView)dlgView.findViewById(R.id.task_description_edit);
+        final TextView descriptionEdit = (TextView)dlgView.findViewById(R.id.task_description_edit);
         descriptionEdit.setText(task.mDescription);
-        TextView dueDateView = (TextView)dlgView.findViewById(R.id.task_due_date);
+        final TextView dueDateView = (TextView)dlgView.findViewById(R.id.task_due_date);
         SetFriendlyDueDateText(dueDateView, task.mDueDate);
+        Button dueDateButton = (Button)dlgView.findViewById(R.id.task_due_date_choose);
+        final Calendar dueDate = task.mDueDate;
+        final TaskDatabase.Task thisTask = task;
+        dueDateButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				ShowDueDateDialog(dueDate, new OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialogInterface, int id) {
+						Dialog dlg = (Dialog)dialogInterface;
+				        DatePicker datePicker = (DatePicker)dlg.findViewById(R.id.due_date_calendar);
+				        Calendar calendar = Calendar.getInstance();
+				        calendar.set(datePicker.getYear(), datePicker.getMonth(),
+				        			 datePicker.getDayOfMonth());
+				        thisTask.mDueDate = calendar;
+				        SetFriendlyDueDateText(dueDateView, thisTask.mDueDate);
+					}
+				});
+			}
+		});
         
-        CheckBox repeatCheck = (CheckBox)dlgView.findViewById(R.id.repeat);
+        final CheckBox repeatCheck = (CheckBox)dlgView.findViewById(R.id.repeat);
         repeatCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
 			@Override
 			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -389,14 +411,14 @@ public class TaskListActivity extends Activity implements OnItemClickListener {
 			}
 		});
         
-        Boolean repeat = task.mRepeatTime != 0;
+        Boolean repeat = task.mRepeatUnit != TaskDatabase.Task.RepeatUnit.NONE;
         repeatCheck.setChecked(repeat);
         SetRepeatVisibility(dlgView, repeat);
 
-        EditText repeatTimeEdit = (EditText)dlgView.findViewById(R.id.repeat_time);
+        final EditText repeatTimeEdit = (EditText)dlgView.findViewById(R.id.repeat_time);
         repeatTimeEdit.setText(Integer.toString(task.mRepeatTime));
         
-        Spinner repeatUnitSpinner = (Spinner)dlgView.findViewById(R.id.repeat_unit);
+        final Spinner repeatUnitSpinner = (Spinner)dlgView.findViewById(R.id.repeat_unit);
         String[] repeatUnits = { "Days", "Weeks", "Months", "Years" };
         repeatUnitSpinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, repeatUnits));
         int repeatUnitPos = 0;
@@ -419,8 +441,8 @@ public class TaskListActivity extends Activity implements OnItemClickListener {
         }
         repeatUnitSpinner.setSelection(repeatUnitPos);
         
-        RadioButton repeatFromComplete = (RadioButton)dlgView.findViewById(R.id.repeat_from_complete);
-        RadioButton repeatFromDue = (RadioButton)dlgView.findViewById(R.id.repeat_from_due);
+        final RadioButton repeatFromComplete = (RadioButton)dlgView.findViewById(R.id.repeat_from_complete);
+        final RadioButton repeatFromDue = (RadioButton)dlgView.findViewById(R.id.repeat_from_due);
         if (task.mRepeatFromComplete)
         {
         	repeatFromComplete.setChecked(true);
@@ -429,7 +451,135 @@ public class TaskListActivity extends Activity implements OnItemClickListener {
         {
         	repeatFromDue.setChecked(true);
         }
+        
+        // Here's a trick:  We cascade the OnClick listeners so we can extract
+        // the dialog contents into the task before calling the second listener.
+        final OnClickListener userListener = okListener;
+        final TaskDatabase.Task myTask = task;
+        OnClickListener cascadedListener = new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				myTask.mName = nameEdit.getText().toString();
+				myTask.mDescription = descriptionEdit.getText().toString();
+				
+				myTask.mRepeatUnit = TaskDatabase.Task.RepeatUnit.NONE;
+				if (repeatCheck.isChecked())
+				{
+					switch (repeatUnitSpinner.getSelectedItemPosition())
+					{
+					case 0:
+						myTask.mRepeatUnit = TaskDatabase.Task.RepeatUnit.DAYS;
+						break;
+					case 1:
+						myTask.mRepeatUnit = TaskDatabase.Task.RepeatUnit.WEEKS;
+						break;
+					case 2:
+						myTask.mRepeatUnit = TaskDatabase.Task.RepeatUnit.MONTHS;
+						break;
+					case 3:
+						myTask.mRepeatUnit = TaskDatabase.Task.RepeatUnit.YEARS;
+						break;
+					}
+					
+					myTask.mRepeatTime = Integer.parseInt(repeatTimeEdit.getText().toString());
+					myTask.mRepeatFromComplete = repeatFromComplete.isChecked();
+				}
+				
+				userListener.onClick(dialog, which);
+			}
+        };
 
+        builder.setNegativeButton("Cancel", null);
+        builder.setPositiveButton("OK", cascadedListener);
+
+        builder.show();
+    }
+    
+    private void ShowDueDateDialog(Calendar dueDate, OnClickListener okListener)
+    {
+        LayoutInflater inflater = this.getLayoutInflater();
+        View dlgView = inflater.inflate(R.layout.dialog_due_date, null);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(dlgView);
+        builder.setTitle("Due Date");
+        builder.setNegativeButton("Cancel", null);
+        builder.setPositiveButton("OK", okListener);
+        
+        final TextView dateText = (TextView)dlgView.findViewById(R.id.due_date_text);
+        SetFriendlyDueDateText(dateText, dueDate);
+        
+        Calendar now = Calendar.getInstance();
+
+        final DatePicker datePicker = (DatePicker)dlgView.findViewById(R.id.due_date_calendar);
+        //datePicker.setMinDate(Math.min(now.getTimeInMillis(), dueDate.getTimeInMillis()));
+        final Calendar myDueDate = dueDate;
+        datePicker.init(dueDate.get(Calendar.YEAR), 
+        				dueDate.get(Calendar.MONTH), 
+        				dueDate.get(Calendar.DAY_OF_MONTH), 
+        				new DatePicker.OnDateChangedListener() {
+							@Override
+							public void onDateChanged(DatePicker view, int year, int monthOfYear,
+									int dayOfMonth) {
+						        Calendar calendar = Calendar.getInstance();
+						        calendar.set(year, monthOfYear, dayOfMonth, 0, 0, 0);
+						        SetFriendlyDueDateText(dateText, myDueDate);
+								
+							}
+						});
+        datePicker.setCalendarViewShown(false);
+        
+        Button todayButton = (Button)dlgView.findViewById(R.id.today_button);
+        todayButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+		        Calendar now = Calendar.getInstance();
+				datePicker.updateDate(now.get(Calendar.YEAR),
+						              now.get(Calendar.MONTH),
+						              now.get(Calendar.DAY_OF_MONTH));
+		        SetFriendlyDueDateText(dateText, now);
+			}
+		});
+        Button tomorrowButton = (Button)dlgView.findViewById(R.id.tomorrow_button);
+        tomorrowButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+		        Calendar tomorrow = Calendar.getInstance();
+		        tomorrow.add(Calendar.DATE, 1);
+				datePicker.updateDate(tomorrow.get(Calendar.YEAR),
+						  			  tomorrow.get(Calendar.MONTH),
+						  			  tomorrow.get(Calendar.DAY_OF_MONTH));
+		        SetFriendlyDueDateText(dateText, tomorrow);
+			}
+		});
+        Button thisWeekendButton = (Button)dlgView.findViewById(R.id.this_weekend_button);
+        thisWeekendButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+		        Calendar weekend = Calendar.getInstance();
+		        while (weekend.get(Calendar.DAY_OF_WEEK) != Calendar.SATURDAY) {
+		        	weekend.add(Calendar.DATE, 1);
+		        }
+				datePicker.updateDate(weekend.get(Calendar.YEAR),
+									  weekend.get(Calendar.MONTH),
+									  weekend.get(Calendar.DAY_OF_MONTH));
+		        SetFriendlyDueDateText(dateText, weekend);
+			}
+		});
+        Button nextWeekButton = (Button)dlgView.findViewById(R.id.next_week_button);
+        nextWeekButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+		        Calendar nextWeek = Calendar.getInstance();
+		        while (nextWeek.get(Calendar.DAY_OF_WEEK) != Calendar.MONDAY) {
+		        	nextWeek.add(Calendar.DATE, 1);
+		        }
+				datePicker.updateDate(nextWeek.get(Calendar.YEAR),
+									  nextWeek.get(Calendar.MONTH),
+									  nextWeek.get(Calendar.DAY_OF_MONTH));
+		        SetFriendlyDueDateText(dateText, nextWeek);
+			}
+		});
+        
         builder.show();
     }
     
@@ -457,15 +607,12 @@ public class TaskListActivity extends Activity implements OnItemClickListener {
 		}
 	}
     
-    private void SetFriendlyDueDateText(TextView dueDateView, Date dueDate) {
+    private void SetFriendlyDueDateText(TextView dueDateView, Calendar dueDate) {
         SimpleDateFormat dateFormatDisplay = new SimpleDateFormat("MM-dd-yyyy", Locale.US);
-        Date now = new Date();
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(dueDate);
-        int zoneOffset = calendar.get(Calendar.ZONE_OFFSET);
-        long nowDay = (now.getTime() + zoneOffset) / 1000 / 60 / 60 / 24;
-        long dueDay = dueDate.getTime() / 1000 / 60 / 60 / 24;
-        long dayDiff = nowDay - dueDay;
+        Calendar now = Calendar.getInstance();
+        int nowDay = TaskDatabase.ConvertDateToInt(now);
+        int dueDay = TaskDatabase.ConvertDateToInt(dueDate);
+        int dayDiff = nowDay - dueDay;
         if (dayDiff == 0)
         {
             dueDateView.setText("Today");
@@ -478,17 +625,17 @@ public class TaskListActivity extends Activity implements OnItemClickListener {
         }
         else if (dayDiff > -7)
         {
-            dueDateView.setText(calendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.US));
+            dueDateView.setText(dueDate.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.US));
             dueDateView.setTextColor(Color.BLACK);
         }
         else if (dayDiff > -14)
         {
-            dueDateView.setText("Next " + calendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.US));
+            dueDateView.setText("Next " + dueDate.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.US));
             dueDateView.setTextColor(Color.BLACK);
         }
         else
         {
-            dueDateView.setText(dateFormatDisplay.format(dueDate));
+            dueDateView.setText(dateFormatDisplay.format(dueDate.getTime()));
             dueDateView.setTextColor(Color.BLACK);
         }
     }
