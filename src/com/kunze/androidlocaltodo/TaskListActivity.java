@@ -425,6 +425,7 @@ public class TaskListActivity
 						calNumber = 0;
 						break;
 					}
+					calNumber *= task.mRepeatTime;
 					task.mDueDate = repeatBase;
 					task.mDueDate.add(calUnit, calNumber);
 				}
@@ -577,11 +578,8 @@ public class TaskListActivity
         final TextView dateText = (TextView)dlgView.findViewById(R.id.due_date_text);
         SetFriendlyDueDateText(dateText, dueDate);
         
-        Calendar now = Calendar.getInstance();
-
         final DatePicker datePicker = (DatePicker)dlgView.findViewById(R.id.due_date_calendar);
         //datePicker.setMinDate(Math.min(now.getTimeInMillis(), dueDate.getTimeInMillis()));
-        final Calendar myDueDate = dueDate;
         datePicker.init(dueDate.get(Calendar.YEAR), 
         				dueDate.get(Calendar.MONTH), 
         				dueDate.get(Calendar.DAY_OF_MONTH), 
@@ -591,7 +589,7 @@ public class TaskListActivity
 									int dayOfMonth) {
 						        Calendar calendar = Calendar.getInstance();
 						        calendar.set(year, monthOfYear, dayOfMonth, 0, 0, 0);
-						        SetFriendlyDueDateText(dateText, myDueDate);
+						        SetFriendlyDueDateText(dateText, calendar);
 								
 							}
 						});
@@ -608,16 +606,18 @@ public class TaskListActivity
 		        SetFriendlyDueDateText(dateText, now);
 			}
 		});
-        Button tomorrowButton = (Button)dlgView.findViewById(R.id.tomorrow_button);
-        tomorrowButton.setOnClickListener(new View.OnClickListener() {
+        Button plusDayButton = (Button)dlgView.findViewById(R.id.plus_day_button);
+        plusDayButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-		        Calendar tomorrow = Calendar.getInstance();
-		        tomorrow.add(Calendar.DATE, 1);
-				datePicker.updateDate(tomorrow.get(Calendar.YEAR),
-						  			  tomorrow.get(Calendar.MONTH),
-						  			  tomorrow.get(Calendar.DAY_OF_MONTH));
-		        SetFriendlyDueDateText(dateText, tomorrow);
+                Calendar calendar = Calendar.getInstance();
+                calendar.set(datePicker.getYear(), datePicker.getMonth(),
+                             datePicker.getDayOfMonth());
+                calendar.add(Calendar.DATE, 1);
+				datePicker.updateDate(calendar.get(Calendar.YEAR),
+				                      calendar.get(Calendar.MONTH),
+				                      calendar.get(Calendar.DAY_OF_MONTH));
+		        SetFriendlyDueDateText(dateText, calendar);
 			}
 		});
         Button thisWeekendButton = (Button)dlgView.findViewById(R.id.this_weekend_button);
@@ -634,18 +634,18 @@ public class TaskListActivity
 		        SetFriendlyDueDateText(dateText, weekend);
 			}
 		});
-        Button nextWeekButton = (Button)dlgView.findViewById(R.id.next_week_button);
-        nextWeekButton.setOnClickListener(new View.OnClickListener() {
+        Button plusWeekButton = (Button)dlgView.findViewById(R.id.plus_week_button);
+        plusWeekButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-		        Calendar nextWeek = Calendar.getInstance();
-		        while (nextWeek.get(Calendar.DAY_OF_WEEK) != Calendar.MONDAY) {
-		        	nextWeek.add(Calendar.DATE, 1);
-		        }
-				datePicker.updateDate(nextWeek.get(Calendar.YEAR),
-									  nextWeek.get(Calendar.MONTH),
-									  nextWeek.get(Calendar.DAY_OF_MONTH));
-		        SetFriendlyDueDateText(dateText, nextWeek);
+                Calendar calendar = Calendar.getInstance();
+                calendar.set(datePicker.getYear(), datePicker.getMonth(),
+                             datePicker.getDayOfMonth());
+                calendar.add(Calendar.DATE, 7);
+                datePicker.updateDate(calendar.get(Calendar.YEAR),
+                                      calendar.get(Calendar.MONTH),
+                                      calendar.get(Calendar.DAY_OF_MONTH));
+                SetFriendlyDueDateText(dateText, calendar);
 			}
 		});
         

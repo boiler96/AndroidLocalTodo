@@ -24,7 +24,7 @@
             android:layout_weight="1"
             android:hint="Enter task name"
             android:imeOptions="actionDone"
-            android:inputType="text" >
+            android:inputType="text|textCapSentences" >
 
             <requestFocus />
         </EditText>
