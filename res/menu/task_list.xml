@@ -1,6 +1,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
 
-    <item
+    <item android:id="@+id/action_new_task" android:title="@string/action_new_task"></item><item
         android:id="@+id/action_settings"
         android:orderInCategory="100"
         android:showAsAction="never"
@@ -8,5 +8,6 @@
     </item>
     <item android:id="@+id/action_load_astrid" android:orderInCategory="200" android:title="@string/action_load_astrid" android:showAsAction="never"></item>
     <item android:id="@+id/action_delete_database" android:orderInCategory="300" android:showAsAction="never" android:title="@string/action_delete_database"></item>
+    
 
 </menu>

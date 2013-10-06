@@ -28,6 +28,17 @@ public class TaskDatabase extends SQLiteOpenHelper {
         public Boolean    mRepeatFromComplete;
         public long       mID;
         
+        public Task() {
+        	mName = "";
+        	mDescription = "";
+        	mDueDate = Calendar.getInstance();
+        	mCompletedDate = Calendar.getInstance();
+        	mCompletedDate.setTimeInMillis(0);
+        	mRepeatUnit = RepeatUnit.NONE;
+        	mRepeatTime = 1;
+        	mRepeatFromComplete = true;
+        	mID = 0;
+        }
     }
 
     private static final String DB_NAME		                 = "TASK_DATABASE";

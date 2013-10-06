@@ -32,6 +32,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CalendarView;
@@ -44,7 +45,10 @@ import android.widget.RadioButton;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-public class TaskListActivity extends Activity implements OnItemClickListener {
+public class TaskListActivity 
+			extends Activity 
+			implements OnItemClickListener,
+			OnItemLongClickListener {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +76,17 @@ public class TaskListActivity extends Activity implements OnItemClickListener {
         {
             DeleteDatabase();
         }
+        else if(item.getItemId() == R.id.action_new_task)
+        {
+        	final TaskDatabase.Task task = new TaskDatabase.Task();
+        	ShowTaskDialog(task, new OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					mDB.AddTask(task);
+					RefreshView();
+				}
+			});
+        }
         return true;
     }
 
@@ -87,6 +102,8 @@ public class TaskListActivity extends Activity implements OnItemClickListener {
         // Set up event handlers for the task list
         ListView listView = (ListView)findViewById(R.id.task_list);
         listView.setOnItemClickListener(this);
+        listView.setOnItemLongClickListener(this);
+        listView.setLongClickable(true);
         
         // Get a cursor to populate the UI
         Cursor cursor = mDB.GetCursor();
@@ -367,7 +384,59 @@ public class TaskListActivity extends Activity implements OnItemClickListener {
 		});
     }
     
-    private void ShowTaskDialog(TaskDatabase.Task task, OnClickListener okListener)
+	@Override
+	public boolean onItemLongClick(AdapterView<?> parent, View view, int position,
+			long id) {
+        Cursor cursor = (Cursor)parent.getItemAtPosition(position);
+        final TaskDatabase.Task task = mDB.LoadTask(cursor);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Done?");
+        builder.setMessage("Mark task \"" + task.mName + "\" as done?");
+        builder.setNegativeButton("No", null);
+        builder.setPositiveButton("Yes", new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				if (task.mRepeatUnit == TaskDatabase.Task.RepeatUnit.NONE) {
+					task.mCompletedDate = Calendar.getInstance();
+				}
+				else {
+					Calendar repeatBase = Calendar.getInstance();
+					if (!task.mRepeatFromComplete) {
+						repeatBase = task.mDueDate;
+					}
+					int calUnit;
+					int calNumber = 1;
+					switch (task.mRepeatUnit) {
+					case DAYS:
+						calUnit = Calendar.DATE;
+						break;
+					case WEEKS:
+						calUnit = Calendar.DATE;
+						calNumber = 7;
+						break;
+					case MONTHS:
+						calUnit = Calendar.MONTH;
+						break;
+					case YEARS:
+						calUnit = Calendar.YEAR;
+						break;
+					default:
+						calUnit = Calendar.DATE;
+						calNumber = 0;
+						break;
+					}
+					task.mDueDate = repeatBase;
+					task.mDueDate.add(calUnit, calNumber);
+				}
+				mDB.SaveTask(task);
+				RefreshView();
+			}
+		});
+        builder.show();
+		return false;
+	}
+
+	private void ShowTaskDialog(TaskDatabase.Task task, OnClickListener okListener)
     {
         LayoutInflater inflater = this.getLayoutInflater();
         View dlgView = inflater.inflate(R.layout.dialog_task, null);
