@@ -21,6 +21,10 @@
 package com.kunze.androidlocaltodo;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -103,6 +107,33 @@ public class TaskDatabase extends SQLiteOpenHelper {
     {
         // TODO Auto-generated method stub
 
+    }
+    
+    public void BackupDatabase(String path) throws java.io.IOException
+    {
+        SQLiteDatabase db = getWritableDatabase();
+        db.close();
+        File fromFile = new File(db.getPath());
+        File toFile = new File(path);
+        FileInputStream reader = new FileInputStream(fromFile);
+        FileOutputStream writer = new FileOutputStream(toFile);
+        
+        final int bufSize = 256;
+        byte[] buf = new byte[bufSize]; 
+        int bytesCopied = 0;
+        do
+        {
+            bytesCopied = reader.read(buf);
+            if (bytesCopied == -1)
+            {
+                break;
+            }
+            writer.write(buf, 0, bytesCopied);
+        } while(true);
+        
+        reader.close();
+        writer.flush();
+        writer.close();
     }
 
     public void AddTask(Task task)

@@ -96,6 +96,10 @@ public class TaskListActivity
         {
             DeleteDatabase();
         }
+        else if(item.getItemId() == R.id.action_backup_database)
+        {
+            BackupDatabase();
+        }
         else if(item.getItemId() == R.id.action_new_task)
         {
         	final TaskDatabase.Task task = new TaskDatabase.Task();
@@ -109,6 +113,24 @@ public class TaskListActivity
         }
         return true;
     }
+
+    private void BackupDatabase() {
+        String loc = Environment.getExternalStorageDirectory() + "/AndroidLocalTodoBackup.db";
+        try
+        {
+            mDB.BackupDatabase(loc);
+            AlertDialog.Builder builder = new AlertDialog.Builder(TaskListActivity.this); 
+            AlertDialog dlg = builder.setTitle("Success!").setMessage("Database backed up!").create();
+            dlg.show();
+        }
+        catch (java.io.IOException e)
+        {
+            AlertDialog.Builder builder = new AlertDialog.Builder(TaskListActivity.this); 
+            AlertDialog dlg = builder.setTitle("File I/O error!").setMessage(e.getMessage()).create();
+            dlg.show();
+        }
+    }
+
 
     private void RefreshView()
     {
