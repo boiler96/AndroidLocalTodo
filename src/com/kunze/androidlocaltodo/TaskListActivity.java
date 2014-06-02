@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import android.media.MediaScannerConnection;
 import android.os.Bundle;
 import android.os.Environment;
 import android.app.Activity;
@@ -115,10 +116,12 @@ public class TaskListActivity
     }
 
     private void BackupDatabase() {
-        String loc = Environment.getExternalStorageDirectory() + "/AndroidLocalTodoBackup.db";
+        String loc = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/AndroidLocalTodoBackup.db";
         try
         {
             mDB.BackupDatabase(loc);
+            String[] paths = { loc };
+            MediaScannerConnection.scanFile(this, paths, null, null);
             AlertDialog.Builder builder = new AlertDialog.Builder(TaskListActivity.this); 
             AlertDialog dlg = builder.setTitle("Success!").setMessage("Database backed up!").create();
             dlg.show();
@@ -476,7 +479,7 @@ public class TaskListActivity
 			}
 		});
         builder.show();
-		return false;
+		return true;
 	}
 
 	private void ShowTaskDialog(TaskDatabase.Task task, OnClickListener okListener)
