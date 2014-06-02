@@ -42,6 +42,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
+import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.support.v4.widget.CursorAdapter;
@@ -100,6 +101,13 @@ public class TaskListActivity
         else if(item.getItemId() == R.id.action_backup_database)
         {
             BackupDatabase();
+        }
+        else if(item.getItemId() == R.id.action_manage_tasks)
+        {
+            Intent intent = new Intent(this, TaskActivity.class);
+            intent.putExtra(TaskActivity.CURSOR_POS, 0);
+            
+            startActivity(intent);
         }
         else if(item.getItemId() == R.id.action_new_task)
         {

@@ -30,5 +30,6 @@
     <string name="action_delete_database">Delete Database</string>
     <string name="action_backup_database">Backup Database</string>
     <string name="action_new_task">Create New Task</string>
-
+    <string name="action_manage_tasks">Manage Tasks</string>
+    
 </resources>
