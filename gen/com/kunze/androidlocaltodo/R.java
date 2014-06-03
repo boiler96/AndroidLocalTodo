@@ -24,12 +24,12 @@ public final class R {
         public static final int ic_launcher=0x7f020000;
     }
     public static final class id {
-        public static final int action_backup_database=0x7f080020;
-        public static final int action_delete_database=0x7f08001f;
-        public static final int action_load_astrid=0x7f08001e;
-        public static final int action_manage_tasks=0x7f080021;
-        public static final int action_new_task=0x7f08001c;
-        public static final int action_settings=0x7f08001d;
+        public static final int action_backup_database=0x7f080021;
+        public static final int action_delete_database=0x7f080020;
+        public static final int action_load_astrid=0x7f08001f;
+        public static final int action_manage_tasks=0x7f080022;
+        public static final int action_new_task=0x7f08001d;
+        public static final int action_settings=0x7f08001e;
         public static final int activity_task_fragment=0x7f080000;
         public static final int activity_task_pager=0x7f080013;
         public static final int dialog_task=0x7f08001a;
@@ -53,9 +53,10 @@ public final class R {
         public static final int task_due_date_choose=0x7f080005;
         public static final int task_due_date_label=0x7f080003;
         public static final int task_list=0x7f080012;
-        public static final int task_list_element=0x7f08001b;
+        public static final int task_list_element=0x7f08001c;
         public static final int task_name_edit=0x7f080002;
-        public static final int task_name_label=0x7f080001;
+        public static final int task_name_label=0x7f08001b;
+        public static final int task_name_static=0x7f080001;
         public static final int this_weekend_button=0x7f080017;
         public static final int today_button=0x7f080016;
     }

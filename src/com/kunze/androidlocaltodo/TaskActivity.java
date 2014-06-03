@@ -103,8 +103,27 @@ public class TaskActivity extends FragmentActivity {
             
             TaskDatabase.Task task = mDB.LoadTask(mCursor);
             
-            final TextView nameEdit = (TextView)rootView.findViewById(R.id.task_name_edit);
+            final EditText nameEdit = (EditText)rootView.findViewById(R.id.task_name_edit);
+            final TextView nameStatic = (TextView)rootView.findViewById(R.id.task_name_static);
+            nameStatic.setText(task.mName);
             nameEdit.setText(task.mName);
+            nameStatic.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    nameEdit.setVisibility(View.VISIBLE);
+                    nameStatic.setVisibility(View.INVISIBLE);
+                }
+            });
+            nameEdit.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                @Override
+                public void onFocusChange(View v, boolean hasFocus) {
+                    if (!hasFocus)
+                    {
+                        nameEdit.setVisibility(View.INVISIBLE);
+                        nameStatic.setVisibility(View.VISIBLE);
+                    }
+                }
+            });
             final TextView descriptionEdit = (TextView)rootView.findViewById(R.id.task_description_edit);
             descriptionEdit.setText(task.mDescription);
             final TextView dueDateView = (TextView)rootView.findViewById(R.id.task_due_date);
