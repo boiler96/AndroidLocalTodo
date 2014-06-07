@@ -21,152 +21,233 @@
  */
  -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
     android:id="@+id/activity_task_fragment"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical" >
+	
+	<ScrollView 
+	    android:layout_width="match_parent"
+	    android:layout_height="wrap_content" >
+	
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="match_parent"
+		    android:orientation="vertical"
+		    android:paddingBottom="@dimen/activity_vertical_margin"
+		    android:paddingLeft="@dimen/activity_horizontal_margin"
+		    android:paddingRight="@dimen/activity_horizontal_margin"
+		    android:paddingTop="@dimen/activity_vertical_margin" >
+	
+		    <RelativeLayout
+		        android:layout_width="fill_parent"
+		        android:layout_height="wrap_content"
+		        android:orientation="horizontal"
+		        android:background="#777700" >
+		
+		        <TextView
+		            android:id="@+id/task_name_static"
+		            android:layout_width="wrap_content"
+		            android:layout_height="wrap_content"
+		            android:layout_centerInParent="true"
+		            android:textColor="#ffffff"
+		            android:textSize="24sp" />
+		
+		        <EditText
+		            android:id="@+id/task_name_edit"
+		            android:layout_width="wrap_content"
+		            android:layout_height="wrap_content"
+		            android:hint="Enter task name"
+		            android:layout_centerInParent="true"
+		            android:imeOptions="actionDone"
+		            android:visibility="invisible"
+		            android:textColor="#ffffff"
+		            android:inputType="text|textCapSentences" >
+		
+		            <requestFocus />
+		        </EditText>
+		    </RelativeLayout>
+	
+		    <LinearLayout
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:orientation="horizontal" >
+			    <DatePicker
+			        android:id="@+id/due_date_calendar"
+			        android:calendarViewShown="false"
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        android:layout_gravity="center_vertical" />
+			    <LinearLayout 
+			        android:layout_width="fill_parent"
+			        android:layout_height="wrap_content"
+			        android:orientation="vertical" >
+				    <Button
+				        android:id="@+id/today_button"
+				        android:layout_width="fill_parent"
+				        android:layout_height="wrap_content"
+				        android:text="T" />
+			       	<Button
+				        android:id="@+id/this_weekend_button"
+				        android:layout_width="fill_parent"
+				        android:layout_height="wrap_content"
+				        android:text="Sat" />
+				    <Button
+				        android:id="@+id/plus_day_button"
+				        android:layout_width="fill_parent"
+				        android:layout_height="wrap_content"
+				        android:text="+1 D" />
+				    <Button
+				        android:id="@+id/plus_week_button"
+				        android:layout_width="fill_parent"
+				        android:layout_height="wrap_content"
+				        android:text="+1 W" />
+				</LinearLayout>
+	   	    </LinearLayout>
+		
+		    <TextView 
+		        android:id="@+id/due_date_text"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_gravity="center_horizontal" />
+		
+		    <CheckBox
+		        android:id="@+id/repeat"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:text="Repeat" />
+		    
+		    <View 
+		        android:id="@+id/repeat_top_divider"
+		        android:layout_width="fill_parent"
+		        android:layout_height="1dp"
+		        android:background="@android:color/darker_gray"/>
+		
+		    <LinearLayout
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:paddingLeft="20dp" >
+			    <TextView
+			        android:id="@+id/repeat_label"
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        android:text="Every" />
+		
+			    <EditText
+			        android:id="@+id/repeat_time"
+			        android:layout_width="83dp"
+			        android:layout_height="wrap_content"
+			        android:ems="10"
+		            android:imeOptions="actionDone"
+			        android:inputType="number" />
+		
+			    <Spinner
+			        android:id="@+id/repeat_unit"
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content" />
+		
+			</LinearLayout>
+		
+		    <LinearLayout
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:paddingLeft="20dp" >
+		        <TextView
+		            android:id="@+id/repeat_from_label"
+		            android:layout_width="wrap_content"
+		            android:layout_height="fill_parent"
+		            android:text="Repeat From:" 
+		            android:gravity="center_vertical"/>
+		        <RadioGroup
+			        android:id="@+id/repeat_from"
+			        android:layout_width="match_parent"
+			        android:layout_height="wrap_content"
+			        android:orientation="vertical" >
+			
+			        <RadioButton
+			            android:id="@+id/repeat_from_complete"
+			            android:layout_width="wrap_content"
+			            android:layout_height="wrap_content"
+			            android:checked="true"
+			            android:text="Completion" />
+			
+			        <RadioButton
+			            android:id="@+id/repeat_from_due"
+			            android:layout_width="wrap_content"
+			            android:layout_height="wrap_content"
+			            android:text="Due Date" />
+			
+			    </RadioGroup>
+			</LinearLayout>
+		
+		    <View 
+		        android:id="@+id/repeat_bottom_divider"
+		        android:layout_width="fill_parent"
+		        android:layout_height="1dp"
+		        android:background="@android:color/darker_gray"/>
+		
+		    <TextView
+		        android:id="@+id/task_description_label"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:text="Description:" />
+		
+		    <EditText
+		        android:id="@+id/task_description_edit"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:ems="10"
+		        android:imeOptions="actionDone"
+		        android:inputType="textMultiLine" />
+		
+		</LinearLayout>
+	</ScrollView>
     <RelativeLayout
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal" >
-
-        <TextView
-            android:id="@+id/task_name_static"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:textSize="24sp" />
-
-        <EditText
-            android:id="@+id/task_name_edit"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:hint="Enter task name"
-            android:layout_centerInParent="true"
-            android:imeOptions="actionDone"
-            android:visibility="invisible"
-            android:inputType="text|textCapSentences" >
-
-            <requestFocus />
-        </EditText>
-    </RelativeLayout>
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" >
-
-        <TextView
-            android:id="@+id/task_due_date_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Due Date:" />
-
-        <TextView
-            android:id="@+id/task_due_date"
-            android:layout_width="0dip"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:padding="10dp"
-            android:text="Press Choose" />
-
-        <Button
-            android:id="@+id/task_due_date_choose"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Choose" />
-    </LinearLayout>
-
-    <CheckBox
-        android:id="@+id/repeat"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Repeat" />
-    
-    <View 
-        android:id="@+id/repeat_top_divider"
-        android:layout_width="fill_parent"
-        android:layout_height="1dp"
-        android:background="@android:color/darker_gray"/>
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingLeft="20dp" >
-	    <TextView
-	        android:id="@+id/repeat_label"
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:text="Every" />
-
-	    <EditText
-	        android:id="@+id/repeat_time"
-	        android:layout_width="83dp"
-	        android:layout_height="wrap_content"
-	        android:ems="10"
-            android:imeOptions="actionDone"
-	        android:inputType="number" />
-
-	    <Spinner
-	        android:id="@+id/repeat_unit"
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content" />
-
-	</LinearLayout>
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingLeft="20dp" >
-        <TextView
-            android:id="@+id/repeat_from_label"
-            android:layout_width="wrap_content"
-            android:layout_height="fill_parent"
-            android:text="Repeat From:" 
-            android:gravity="center_vertical"/>
-        <RadioGroup
-	        android:id="@+id/repeat_from"
+		<LinearLayout
 	        android:layout_width="match_parent"
 	        android:layout_height="wrap_content"
-	        android:orientation="vertical" >
+	        android:orientation="horizontal" >
 	
-	        <RadioButton
-	            android:id="@+id/repeat_from_complete"
-	            android:layout_width="wrap_content"
+	        <Button
+	            android:id="@+id/done_button"
+		        android:layout_width="0dp"
+		        android:layout_weight="1"
 	            android:layout_height="wrap_content"
-	            android:checked="true"
-	            android:text="Completion" />
+	            android:text="Done" />
 	
-	        <RadioButton
-	            android:id="@+id/repeat_from_due"
-	            android:layout_width="wrap_content"
+	        <Button
+	            android:id="@+id/delete_button"
+		        android:layout_width="0dp"
+		        android:layout_weight="1"
 	            android:layout_height="wrap_content"
-	            android:text="Due Date" />
+	            android:text="Delete" />
 	
-	    </RadioGroup>
-	</LinearLayout>
-
-    <View 
-        android:id="@+id/repeat_bottom_divider"
-        android:layout_width="fill_parent"
-        android:layout_height="1dp"
-        android:background="@android:color/darker_gray"/>
-
-    <TextView
-        android:id="@+id/task_description_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Description:" />
-
-    <EditText
-        android:id="@+id/task_description_edit"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:imeOptions="actionDone"
-        android:inputType="textMultiLine" />
-
+		</LinearLayout>
+		<LinearLayout
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:orientation="horizontal" >
+	
+	        <Button
+	            android:id="@+id/accept_button"
+		        android:layout_width="0dp"
+		        android:layout_weight="1"
+	            android:layout_height="wrap_content"
+	            android:visibility="invisible"
+	            android:text="Accept" />
+	
+	        <Button
+	            android:id="@+id/revert_button"
+		        android:layout_width="0dp"
+		        android:layout_weight="1"
+	            android:layout_height="wrap_content"
+	            android:visibility="invisible"
+	            android:text="Revert" />
+	
+		</LinearLayout>
+			</RelativeLayout>
 </LinearLayout>
+

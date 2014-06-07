@@ -37,9 +37,13 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -91,18 +95,21 @@ public class TaskActivity extends FragmentActivity {
             mDB = new TaskDatabase(getActivity());
             View rootView = inflater.inflate(
                     R.layout.activity_task, container, false);
-            InitializeView(rootView);
-            return rootView;
-        }
-        private void InitializeView(View rootView)
-        {
             Bundle args = getArguments();
             int pos = args.getInt(CURSOR_POS, 0);
             mCursor = mDB.GetCursor();
             mCursor.moveToPosition(pos);
             
             TaskDatabase.Task task = mDB.LoadTask(mCursor);
+            mOriginalTask = task;
+            mNewTask = new TaskDatabase.Task(task);
             
+            InitializeView(rootView, task);
+            return rootView;
+        }
+        private void InitializeView(View rootView, TaskDatabase.Task task)
+        {
+            final View activityView = rootView;
             final EditText nameEdit = (EditText)rootView.findViewById(R.id.task_name_edit);
             final TextView nameStatic = (TextView)rootView.findViewById(R.id.task_name_static);
             nameStatic.setText(task.mName);
@@ -126,27 +133,109 @@ public class TaskActivity extends FragmentActivity {
             });
             final TextView descriptionEdit = (TextView)rootView.findViewById(R.id.task_description_edit);
             descriptionEdit.setText(task.mDescription);
-            final TextView dueDateView = (TextView)rootView.findViewById(R.id.task_due_date);
+            final TextView dueDateView = (TextView)rootView.findViewById(R.id.due_date_text);
             SetFriendlyDueDateText(dueDateView, task.mDueDate);
-            Button dueDateButton = (Button)rootView.findViewById(R.id.task_due_date_choose);
             final Calendar dueDate = task.mDueDate;
             final TaskDatabase.Task thisTask = task;
             
+            final DatePicker datePicker = (DatePicker)rootView.findViewById(R.id.due_date_calendar);
+            datePicker.init(dueDate.get(Calendar.YEAR), 
+                    dueDate.get(Calendar.MONTH), 
+                    dueDate.get(Calendar.DAY_OF_MONTH), 
+                    new DatePicker.OnDateChangedListener() {
+                        @Override
+                        public void onDateChanged(DatePicker view, int year, int monthOfYear,
+                                int dayOfMonth) {
+                            Calendar calendar = Calendar.getInstance();
+                            calendar.set(year, monthOfYear, dayOfMonth, 0, 0, 0);
+                            SetFriendlyDueDateText(dueDateView, calendar);
+                            TaskChanged(activityView);
+                        }
+                    });
+
+            Button todayButton = (Button)rootView.findViewById(R.id.today_button);
+            todayButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Calendar now = Calendar.getInstance();
+                    datePicker.updateDate(now.get(Calendar.YEAR),
+                                          now.get(Calendar.MONTH),
+                                          now.get(Calendar.DAY_OF_MONTH));
+                    SetFriendlyDueDateText(dueDateView, now);
+                }
+            });
+            Button plusDayButton = (Button)rootView.findViewById(R.id.plus_day_button);
+            plusDayButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.set(datePicker.getYear(), datePicker.getMonth(),
+                                 datePicker.getDayOfMonth());
+                    calendar.add(Calendar.DATE, 1);
+                    datePicker.updateDate(calendar.get(Calendar.YEAR),
+                                          calendar.get(Calendar.MONTH),
+                                          calendar.get(Calendar.DAY_OF_MONTH));
+                    SetFriendlyDueDateText(dueDateView, calendar);
+                }
+            });
+            Button thisWeekendButton = (Button)rootView.findViewById(R.id.this_weekend_button);
+            thisWeekendButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Calendar weekend = Calendar.getInstance();
+                    while (weekend.get(Calendar.DAY_OF_WEEK) != Calendar.SATURDAY) {
+                        weekend.add(Calendar.DATE, 1);
+                    }
+                    datePicker.updateDate(weekend.get(Calendar.YEAR),
+                                          weekend.get(Calendar.MONTH),
+                                          weekend.get(Calendar.DAY_OF_MONTH));
+                    SetFriendlyDueDateText(dueDateView, weekend);
+                }
+            });
+            Button plusWeekButton = (Button)rootView.findViewById(R.id.plus_week_button);
+            plusWeekButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.set(datePicker.getYear(), datePicker.getMonth(),
+                                 datePicker.getDayOfMonth());
+                    calendar.add(Calendar.DATE, 7);
+                    datePicker.updateDate(calendar.get(Calendar.YEAR),
+                                          calendar.get(Calendar.MONTH),
+                                          calendar.get(Calendar.DAY_OF_MONTH));
+                    SetFriendlyDueDateText(dueDateView, calendar);
+                }
+            });
+
             final CheckBox repeatCheck = (CheckBox)rootView.findViewById(R.id.repeat);
+            Boolean repeat = task.mRepeatUnit != TaskDatabase.Task.RepeatUnit.NONE;
+            repeatCheck.setChecked(repeat);
+            SetRepeatVisibility(rootView, repeat);
             repeatCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     View dialog = (View)buttonView.getParent();
                     SetRepeatVisibility(dialog, isChecked);
+                    TaskChanged(activityView);
                 }
             });
             
-            Boolean repeat = task.mRepeatUnit != TaskDatabase.Task.RepeatUnit.NONE;
-            repeatCheck.setChecked(repeat);
-            SetRepeatVisibility(rootView, repeat);
 
             final EditText repeatTimeEdit = (EditText)rootView.findViewById(R.id.repeat_time);
             repeatTimeEdit.setText(Integer.toString(task.mRepeatTime));
+            repeatTimeEdit.addTextChangedListener(new TextWatcher()
+            {
+                @Override
+                public void afterTextChanged(Editable s) {}
+                @Override
+                public void beforeTextChanged(CharSequence s, int start,
+                        int count, int after) {}
+                @Override
+                public void onTextChanged(CharSequence s, int start,
+                        int before, int count) {
+                    TaskChanged(activityView);
+                }
+            });
             
             final Spinner repeatUnitSpinner = (Spinner)rootView.findViewById(R.id.repeat_unit);
             String[] repeatUnits = { "Days", "Weeks", "Months", "Years" };
@@ -170,6 +259,23 @@ public class TaskActivity extends FragmentActivity {
                 repeatUnitPos = 0;  
             }
             repeatUnitSpinner.setSelection(repeatUnitPos);
+            repeatUnitSpinner.post(new Runnable()
+            {
+                public void run()
+                {
+                    repeatUnitSpinner.setOnItemSelectedListener(new OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> arg0, View arg1,
+                                int arg2, long arg3) {
+                            TaskChanged(activityView);
+                        }
+                        @Override
+                        public void onNothingSelected(AdapterView<?> arg0) {
+                            TaskChanged(activityView);
+                        }
+                    });
+                }
+            });
             
             final RadioButton repeatFromComplete = (RadioButton)rootView.findViewById(R.id.repeat_from_complete);
             final RadioButton repeatFromDue = (RadioButton)rootView.findViewById(R.id.repeat_from_due);
@@ -181,7 +287,42 @@ public class TaskActivity extends FragmentActivity {
             {
                 repeatFromDue.setChecked(true);
             }
-            
+            Button revertButton = (Button)rootView.findViewById(R.id.revert_button);
+            Button acceptButton = (Button)rootView.findViewById(R.id.accept_button);
+            Button doneButton = (Button)rootView.findViewById(R.id.done_button);
+            Button deleteButton = (Button)rootView.findViewById(R.id.delete_button);
+            revertButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mNewTask = new TaskDatabase.Task(mOriginalTask);
+                    InitializeView(activityView, mOriginalTask);
+                    TaskReverted(activityView);
+                }
+            });
+        }
+        
+        private void TaskChanged(View rootView)
+        {
+            Button revertButton = (Button)rootView.findViewById(R.id.revert_button);
+            Button acceptButton = (Button)rootView.findViewById(R.id.accept_button);
+            Button doneButton = (Button)rootView.findViewById(R.id.done_button);
+            Button deleteButton = (Button)rootView.findViewById(R.id.delete_button);
+            doneButton.setVisibility(Button.INVISIBLE);
+            deleteButton.setVisibility(Button.INVISIBLE);
+            revertButton.setVisibility(Button.VISIBLE);
+            acceptButton.setVisibility(Button.VISIBLE);
+        }
+        
+        private void TaskReverted(View rootView)
+        {
+            Button revertButton = (Button)rootView.findViewById(R.id.revert_button);
+            Button acceptButton = (Button)rootView.findViewById(R.id.accept_button);
+            Button doneButton = (Button)rootView.findViewById(R.id.done_button);
+            Button deleteButton = (Button)rootView.findViewById(R.id.delete_button);
+            doneButton.setVisibility(Button.VISIBLE);
+            deleteButton.setVisibility(Button.VISIBLE);
+            revertButton.setVisibility(Button.INVISIBLE);
+            acceptButton.setVisibility(Button.INVISIBLE);
         }
         
         private static void SetFriendlyDueDateText(TextView dueDateView, Calendar dueDate) {
@@ -240,6 +381,8 @@ public class TaskActivity extends FragmentActivity {
                 }
             }
         }
+        private TaskDatabase.Task mOriginalTask;
+        private TaskDatabase.Task mNewTask;
         private Cursor mCursor;
         private TaskDatabase mDB;
     }

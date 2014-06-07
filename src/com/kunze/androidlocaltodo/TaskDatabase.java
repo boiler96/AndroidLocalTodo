@@ -63,6 +63,18 @@ public class TaskDatabase extends SQLiteOpenHelper {
         	mRepeatFromComplete = true;
         	mID = 0;
         }
+        
+        public Task(Task other)
+        {
+            mName = new String(other.mName);
+            mDescription = new String(other.mDescription);
+            mDueDate = (Calendar)other.mDueDate.clone();
+            mCompletedDate = (Calendar)other.mCompletedDate.clone();
+            mRepeatUnit = other.mRepeatUnit;
+            mRepeatTime = other.mRepeatTime;
+            mRepeatFromComplete = other.mRepeatFromComplete.booleanValue();
+            mID = other.mID;
+        }
     }
 
     private static final String DB_NAME		                 = "TASK_DATABASE";
