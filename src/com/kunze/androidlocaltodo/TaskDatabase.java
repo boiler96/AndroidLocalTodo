@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -39,7 +40,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class TaskDatabase extends SQLiteOpenHelper {
     
-    static public class Task
+    static public class Task implements Serializable
     {
         public static enum RepeatUnit { NONE, DAYS, WEEKS, MONTHS, YEARS };
 
@@ -74,6 +75,41 @@ public class TaskDatabase extends SQLiteOpenHelper {
             mRepeatTime = other.mRepeatTime;
             mRepeatFromComplete = other.mRepeatFromComplete.booleanValue();
             mID = other.mID;
+        }
+        
+        @Override
+        public boolean equals(Object other)
+        {
+            if (this == other)
+            {
+                return true;
+            }
+            else if (other == null)
+            {
+                return false;
+            }
+            else if (other instanceof Task)
+            {
+                Task otherTask = (Task)other;
+                if (mName.equals(otherTask.mName) &&
+                    mDescription.equals(otherTask.mDescription) && 
+                    mDueDate.equals(otherTask.mDueDate) && 
+                    mCompletedDate.equals(otherTask.mCompletedDate) && 
+                    mRepeatUnit.equals(otherTask.mRepeatUnit) && 
+                    mRepeatTime == otherTask.mRepeatTime && 
+                    mRepeatFromComplete.equals(otherTask.mRepeatFromComplete) &&
+                    mID == otherTask.mID)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        @Override
+        public int hashCode()
+        {
+            return mName.hashCode() + (int)mID;
         }
     }
 

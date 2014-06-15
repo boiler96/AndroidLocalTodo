@@ -39,6 +39,7 @@ import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -89,31 +90,97 @@ public class TaskActivity extends FragmentActivity {
     public static class TaskActivityFragment extends Fragment
     {
         @Override
+        public void onSaveInstanceState (Bundle outState)
+        {
+            Bundle args = getArguments();
+            int pos = args.getInt(CURSOR_POS, 0);
+            Log.v("TaskActivityFragment", "onSaveInstanceState " + Integer.toString(pos));
+            mProgrammaticChange = true;
+            outState.putSerializable("mNewTask", mNewTask);
+            super.onSaveInstanceState(outState);
+        }
+        
+        @Override
+        public void onActivityCreated (Bundle savedInstanceState)
+        {
+            Bundle args = getArguments();
+            int pos = args.getInt(CURSOR_POS, 0);
+            Log.v("TaskActivityFragment", "onActivityCreated " + Integer.toString(pos));
+            super.onActivityCreated(savedInstanceState);
+        }
+        
+        @Override
+        public void onStart()
+        {
+            Bundle args = getArguments();
+            int pos = args.getInt(CURSOR_POS, 0);
+            Log.v("TaskActivityFragment", "onStart " + Integer.toString(pos));
+            super.onStart();
+        }
+        
+        @Override
+        public void onResume()
+        {
+            Bundle args = getArguments();
+            int pos = args.getInt(CURSOR_POS, 0);
+            Log.v("TaskActivityFragment", "onResume " + Integer.toString(pos));
+            super.onResume();
+            mProgrammaticChange = false;
+        }
+
+        @Override
         public View onCreateView(LayoutInflater inflater,
                 ViewGroup container, Bundle savedInstanceState) 
         {
-            mDB = new TaskDatabase(getActivity());
+            mProgrammaticChange = true;
+            TaskDatabase db = new TaskDatabase(getActivity());
             View rootView = inflater.inflate(
                     R.layout.activity_task, container, false);
             Bundle args = getArguments();
             int pos = args.getInt(CURSOR_POS, 0);
-            mCursor = mDB.GetCursor();
-            mCursor.moveToPosition(pos);
+            Log.v("TaskActivityFragment", "onCreateView " + Integer.toString(pos));
+            Cursor cursor = db.GetCursor();
+            cursor.moveToPosition(pos);
             
-            TaskDatabase.Task task = mDB.LoadTask(mCursor);
+            TaskDatabase.Task task = db.LoadTask(cursor);
             mOriginalTask = task;
-            mNewTask = new TaskDatabase.Task(task);
+            if (savedInstanceState != null)
+            {
+                mNewTask = (TaskDatabase.Task)savedInstanceState.getSerializable("mNewTask");
+                if (!mOriginalTask.equals(mNewTask))
+                {
+                    mProgrammaticChange = false;
+                    TaskChanged(rootView);
+                    mProgrammaticChange = true;
+                }
+            }
+            else
+            {
+                mNewTask = new TaskDatabase.Task(task);
+            }
             
-            InitializeView(rootView, task);
+            InitializeView(rootView);
+            InitializeViewFields(rootView, task);
             return rootView;
         }
-        private void InitializeView(View rootView, TaskDatabase.Task task)
+        private void InitializeView(View rootView)
         {
             final View activityView = rootView;
+            TextWatcher textWatcher = new TextWatcher()
+            {
+                @Override
+                public void afterTextChanged(Editable s) {}
+                @Override
+                public void beforeTextChanged(CharSequence s, int start,
+                        int count, int after) {}
+                @Override
+                public void onTextChanged(CharSequence s, int start,
+                        int before, int count) {
+                    TaskChanged(activityView);
+                }
+            };
             final EditText nameEdit = (EditText)rootView.findViewById(R.id.task_name_edit);
             final TextView nameStatic = (TextView)rootView.findViewById(R.id.task_name_static);
-            nameStatic.setText(task.mName);
-            nameEdit.setText(task.mName);
             nameStatic.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -131,17 +198,13 @@ public class TaskActivity extends FragmentActivity {
                     }
                 }
             });
+            nameEdit.addTextChangedListener(textWatcher);
             final TextView descriptionEdit = (TextView)rootView.findViewById(R.id.task_description_edit);
-            descriptionEdit.setText(task.mDescription);
-            final TextView dueDateView = (TextView)rootView.findViewById(R.id.due_date_text);
-            SetFriendlyDueDateText(dueDateView, task.mDueDate);
-            final Calendar dueDate = task.mDueDate;
-            final TaskDatabase.Task thisTask = task;
+            descriptionEdit.addTextChangedListener(textWatcher);
             
+            final TextView dueDateView = (TextView)rootView.findViewById(R.id.due_date_text);
             final DatePicker datePicker = (DatePicker)rootView.findViewById(R.id.due_date_calendar);
-            datePicker.init(dueDate.get(Calendar.YEAR), 
-                    dueDate.get(Calendar.MONTH), 
-                    dueDate.get(Calendar.DAY_OF_MONTH), 
+            datePicker.init(0, 0, 0, 
                     new DatePicker.OnDateChangedListener() {
                         @Override
                         public void onDateChanged(DatePicker view, int year, int monthOfYear,
@@ -208,9 +271,6 @@ public class TaskActivity extends FragmentActivity {
             });
 
             final CheckBox repeatCheck = (CheckBox)rootView.findViewById(R.id.repeat);
-            Boolean repeat = task.mRepeatUnit != TaskDatabase.Task.RepeatUnit.NONE;
-            repeatCheck.setChecked(repeat);
-            SetRepeatVisibility(rootView, repeat);
             repeatCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -219,27 +279,70 @@ public class TaskActivity extends FragmentActivity {
                     TaskChanged(activityView);
                 }
             });
-            
 
             final EditText repeatTimeEdit = (EditText)rootView.findViewById(R.id.repeat_time);
-            repeatTimeEdit.setText(Integer.toString(task.mRepeatTime));
-            repeatTimeEdit.addTextChangedListener(new TextWatcher()
-            {
-                @Override
-                public void afterTextChanged(Editable s) {}
-                @Override
-                public void beforeTextChanged(CharSequence s, int start,
-                        int count, int after) {}
-                @Override
-                public void onTextChanged(CharSequence s, int start,
-                        int before, int count) {
-                    TaskChanged(activityView);
-                }
-            });
+            repeatTimeEdit.addTextChangedListener(textWatcher);
             
             final Spinner repeatUnitSpinner = (Spinner)rootView.findViewById(R.id.repeat_unit);
             String[] repeatUnits = { "Days", "Weeks", "Months", "Years" };
             repeatUnitSpinner.setAdapter(new ArrayAdapter<String>(getActivity(), android.R.layout.simple_spinner_item, repeatUnits));
+            repeatUnitSpinner.setOnItemSelectedListener(new OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view,
+                        int position, long id) {
+                    if (mRow != -1 && mRow != id)
+                    {
+                        TaskChanged(activityView);
+                    }
+                    mRow = id;
+                }
+                @Override
+                public void onNothingSelected(AdapterView<?> arg0) {
+                    TaskChanged(activityView);
+                }
+                private long mRow = -1;
+            });
+            
+            final RadioButton repeatFromComplete = (RadioButton)rootView.findViewById(R.id.repeat_from_complete);
+            final RadioButton repeatFromDue = (RadioButton)rootView.findViewById(R.id.repeat_from_due);
+            Button revertButton = (Button)rootView.findViewById(R.id.revert_button);
+            Button acceptButton = (Button)rootView.findViewById(R.id.accept_button);
+            Button doneButton = (Button)rootView.findViewById(R.id.done_button);
+            Button deleteButton = (Button)rootView.findViewById(R.id.delete_button);
+            revertButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mNewTask = new TaskDatabase.Task(mOriginalTask);
+                    mProgrammaticChange = true;
+                    InitializeViewFields(activityView, mOriginalTask);
+                    mProgrammaticChange = false;
+                    TaskReverted(activityView);
+                }
+            });
+        }
+        
+        private void InitializeViewFields(View rootView, TaskDatabase.Task task)
+        {
+            final EditText nameEdit = (EditText)rootView.findViewById(R.id.task_name_edit);
+            final TextView nameStatic = (TextView)rootView.findViewById(R.id.task_name_static);
+            nameStatic.setText(task.mName);
+            nameEdit.setText(task.mName);
+            final TextView descriptionEdit = (TextView)rootView.findViewById(R.id.task_description_edit);
+            descriptionEdit.setText(task.mDescription);
+            final TextView dueDateView = (TextView)rootView.findViewById(R.id.due_date_text);
+            SetFriendlyDueDateText(dueDateView, task.mDueDate);
+            final Calendar dueDate = task.mDueDate;
+            final DatePicker datePicker = (DatePicker)rootView.findViewById(R.id.due_date_calendar);
+            datePicker.updateDate(dueDate.get(Calendar.YEAR), 
+                    dueDate.get(Calendar.MONTH), 
+                    dueDate.get(Calendar.DAY_OF_MONTH));
+            final CheckBox repeatCheck = (CheckBox)rootView.findViewById(R.id.repeat);
+            Boolean repeat = task.mRepeatUnit != TaskDatabase.Task.RepeatUnit.NONE;
+            repeatCheck.setChecked(repeat);
+            SetRepeatVisibility(rootView, repeat);
+            final EditText repeatTimeEdit = (EditText)rootView.findViewById(R.id.repeat_time);
+            repeatTimeEdit.setText(Integer.toString(task.mRepeatTime));
+            final Spinner repeatUnitSpinner = (Spinner)rootView.findViewById(R.id.repeat_unit);
             int repeatUnitPos = 0;
             switch (task.mRepeatUnit)
             {
@@ -259,24 +362,6 @@ public class TaskActivity extends FragmentActivity {
                 repeatUnitPos = 0;  
             }
             repeatUnitSpinner.setSelection(repeatUnitPos);
-            repeatUnitSpinner.post(new Runnable()
-            {
-                public void run()
-                {
-                    repeatUnitSpinner.setOnItemSelectedListener(new OnItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(AdapterView<?> arg0, View arg1,
-                                int arg2, long arg3) {
-                            TaskChanged(activityView);
-                        }
-                        @Override
-                        public void onNothingSelected(AdapterView<?> arg0) {
-                            TaskChanged(activityView);
-                        }
-                    });
-                }
-            });
-            
             final RadioButton repeatFromComplete = (RadioButton)rootView.findViewById(R.id.repeat_from_complete);
             final RadioButton repeatFromDue = (RadioButton)rootView.findViewById(R.id.repeat_from_due);
             if (task.mRepeatFromComplete)
@@ -287,30 +372,21 @@ public class TaskActivity extends FragmentActivity {
             {
                 repeatFromDue.setChecked(true);
             }
-            Button revertButton = (Button)rootView.findViewById(R.id.revert_button);
-            Button acceptButton = (Button)rootView.findViewById(R.id.accept_button);
-            Button doneButton = (Button)rootView.findViewById(R.id.done_button);
-            Button deleteButton = (Button)rootView.findViewById(R.id.delete_button);
-            revertButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    mNewTask = new TaskDatabase.Task(mOriginalTask);
-                    InitializeView(activityView, mOriginalTask);
-                    TaskReverted(activityView);
-                }
-            });
         }
-        
+
         private void TaskChanged(View rootView)
         {
-            Button revertButton = (Button)rootView.findViewById(R.id.revert_button);
-            Button acceptButton = (Button)rootView.findViewById(R.id.accept_button);
-            Button doneButton = (Button)rootView.findViewById(R.id.done_button);
-            Button deleteButton = (Button)rootView.findViewById(R.id.delete_button);
-            doneButton.setVisibility(Button.INVISIBLE);
-            deleteButton.setVisibility(Button.INVISIBLE);
-            revertButton.setVisibility(Button.VISIBLE);
-            acceptButton.setVisibility(Button.VISIBLE);
+            if (!mProgrammaticChange)
+            {
+                Button revertButton = (Button)rootView.findViewById(R.id.revert_button);
+                Button acceptButton = (Button)rootView.findViewById(R.id.accept_button);
+                Button doneButton = (Button)rootView.findViewById(R.id.done_button);
+                Button deleteButton = (Button)rootView.findViewById(R.id.delete_button);
+                doneButton.setVisibility(Button.INVISIBLE);
+                deleteButton.setVisibility(Button.INVISIBLE);
+                revertButton.setVisibility(Button.VISIBLE);
+                acceptButton.setVisibility(Button.VISIBLE);
+            }
         }
         
         private void TaskReverted(View rootView)
@@ -383,8 +459,7 @@ public class TaskActivity extends FragmentActivity {
         }
         private TaskDatabase.Task mOriginalTask;
         private TaskDatabase.Task mNewTask;
-        private Cursor mCursor;
-        private TaskDatabase mDB;
+        private Boolean mProgrammaticChange;
     }
     public final static String CURSOR_POS = "com.kunze.androidlocaltodo.CURSOR_POS";
 
