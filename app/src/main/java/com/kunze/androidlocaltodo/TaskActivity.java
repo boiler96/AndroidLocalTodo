@@ -43,6 +43,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
@@ -88,6 +90,7 @@ public class TaskActivity extends FragmentActivity {
     }
     
     public static class TaskActivityFragment extends Fragment
+            implements ProgrammaticViewPager.ProgrammaticViewPagerNotify
     {
         @Override
         public void onSaveInstanceState (Bundle outState)
@@ -386,6 +389,8 @@ public class TaskActivity extends FragmentActivity {
                 deleteButton.setVisibility(Button.INVISIBLE);
                 revertButton.setVisibility(Button.VISIBLE);
                 acceptButton.setVisibility(Button.VISIBLE);
+                ProgrammaticViewPager pager = (ProgrammaticViewPager)getActivity().findViewById(R.id.activity_task_pager);
+                pager.Disable(this);
             }
         }
         
@@ -399,8 +404,23 @@ public class TaskActivity extends FragmentActivity {
             deleteButton.setVisibility(Button.VISIBLE);
             revertButton.setVisibility(Button.INVISIBLE);
             acceptButton.setVisibility(Button.INVISIBLE);
+            ProgrammaticViewPager pager = (ProgrammaticViewPager)getActivity().findViewById(R.id.activity_task_pager);
+            pager.Enable();
         }
-        
+
+
+        @Override
+        public void SwipedWhileDisabled() {
+            AlphaAnimation animation = new AlphaAnimation(1.0f, 0.0f);
+            animation.setDuration(50);
+            animation.setRepeatCount(5);
+            animation.setRepeatMode(Animation.REVERSE);
+            Button revertButton = (Button)getView().findViewById(R.id.revert_button);
+            Button acceptButton = (Button)getView().findViewById(R.id.accept_button);
+            revertButton.startAnimation(animation);
+            acceptButton.startAnimation(animation);
+        }
+
         private static void SetFriendlyDueDateText(TextView dueDateView, Calendar dueDate) {
             SimpleDateFormat dateFormatDisplay = new SimpleDateFormat("MM-dd-yyyy", Locale.US);
             Calendar now = Calendar.getInstance();
@@ -468,11 +488,11 @@ public class TaskActivity extends FragmentActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_task_pager);
         mAdapter = new TaskActivityPagerAdapter(mDB, getSupportFragmentManager());
-        mViewPager = (ViewPager)findViewById(R.id.activity_task_pager);
+        mViewPager = (ProgrammaticViewPager)findViewById(R.id.activity_task_pager);
         mViewPager.setAdapter(mAdapter);
     }
     
     private TaskActivityPagerAdapter mAdapter;
-    private ViewPager mViewPager;
+    private ProgrammaticViewPager mViewPager;
     private TaskDatabase mDB = new TaskDatabase(this);
 }
