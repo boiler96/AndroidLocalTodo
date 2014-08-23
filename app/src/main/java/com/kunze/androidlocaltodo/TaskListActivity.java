@@ -26,7 +26,6 @@ import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -57,7 +56,6 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CalendarView;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.DatePicker;
@@ -105,13 +103,13 @@ public class TaskListActivity
         else if(item.getItemId() == R.id.action_manage_tasks)
         {
             Intent intent = new Intent(this, TaskActivity.class);
-            intent.putExtra(TaskActivity.CURSOR_POS, 0);
+            intent.putExtra(TaskActivity.TASK_ID, mDB.LoadTask(mDB.GetCursor()).mID);
             
             startActivity(intent);
         }
         else if(item.getItemId() == R.id.action_new_task)
         {
-        	final TaskDatabase.Task task = new TaskDatabase.Task();
+        	final Task task = new Task();
         	ShowTaskDialog(task, new OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
@@ -312,7 +310,7 @@ public class TaskListActivity
                     it.set(field);
                 }
                 
-                TaskDatabase.Task taskElement = new TaskDatabase.Task();
+                Task taskElement = new Task();
                 taskElement.mName = taskFields.get(0);
                 taskElement.mDescription = taskFields.get(8);
                 
@@ -330,7 +328,7 @@ public class TaskListActivity
                 {
                     taskElement.mCompletedDate.setTime(dateFormat.parse(completedString));
                 }
-                taskElement.mRepeatUnit = TaskDatabase.Task.RepeatUnit.NONE;
+                taskElement.mRepeatUnit = Task.RepeatUnit.NONE;
                 taskElement.mRepeatTime = 0;
                 taskElement.mRepeatFromComplete = false;
                 String repeatString = taskFields.get(6);
@@ -343,19 +341,19 @@ public class TaskListActivity
                     {
                         if (freqFields[1].equals("YEARLY"))
                         {
-                            taskElement.mRepeatUnit = TaskDatabase.Task.RepeatUnit.YEARS;
+                            taskElement.mRepeatUnit = Task.RepeatUnit.YEARS;
                         }
                         else if (freqFields[1].equals("MONTHLY"))
                         {
-                            taskElement.mRepeatUnit = TaskDatabase.Task.RepeatUnit.MONTHS;
+                            taskElement.mRepeatUnit = Task.RepeatUnit.MONTHS;
                         }
                         else if (freqFields[1].equals("WEEKLY"))
                         {
-                            taskElement.mRepeatUnit = TaskDatabase.Task.RepeatUnit.WEEKS;
+                            taskElement.mRepeatUnit = Task.RepeatUnit.WEEKS;
                         }
                         else if (freqFields[1].equals("DAILY"))
                         {
-                            taskElement.mRepeatUnit = TaskDatabase.Task.RepeatUnit.DAYS;
+                            taskElement.mRepeatUnit = Task.RepeatUnit.DAYS;
                         }
                     }
                     freqFields = repeatFields[1].split("=");
@@ -427,7 +425,7 @@ public class TaskListActivity
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Cursor cursor = (Cursor)parent.getItemAtPosition(position);
-        final TaskDatabase.Task task = mDB.LoadTask(cursor);
+        final Task task = mDB.LoadTask(cursor);
         ShowTaskDialog(task, new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
@@ -441,7 +439,7 @@ public class TaskListActivity
 	public boolean onItemLongClick(AdapterView<?> parent, View view, int position,
 			long id) {
         Cursor cursor = (Cursor)parent.getItemAtPosition(position);
-        final TaskDatabase.Task task = mDB.LoadTask(cursor);
+        final Task task = mDB.LoadTask(cursor);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Done?");
         builder.setMessage("Mark task \"" + task.mName + "\" as done?");
@@ -449,7 +447,7 @@ public class TaskListActivity
         builder.setPositiveButton("Yes", new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-				if (task.mRepeatUnit == TaskDatabase.Task.RepeatUnit.NONE) {
+				if (task.mRepeatUnit == Task.RepeatUnit.NONE) {
 					task.mCompletedDate = Calendar.getInstance();
 				}
 				else {
@@ -490,7 +488,7 @@ public class TaskListActivity
 		return true;
 	}
 
-	private void ShowTaskDialog(TaskDatabase.Task task, OnClickListener okListener)
+	private void ShowTaskDialog(Task task, OnClickListener okListener)
     {
         LayoutInflater inflater = this.getLayoutInflater();
         View dlgView = inflater.inflate(R.layout.dialog_task, null);
@@ -506,7 +504,7 @@ public class TaskListActivity
         SetFriendlyDueDateText(dueDateView, task.mDueDate);
         Button dueDateButton = (Button)dlgView.findViewById(R.id.task_due_date_choose);
         final Calendar dueDate = task.mDueDate;
-        final TaskDatabase.Task thisTask = task;
+        final Task thisTask = task;
         dueDateButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -534,7 +532,7 @@ public class TaskListActivity
 			}
 		});
         
-        Boolean repeat = task.mRepeatUnit != TaskDatabase.Task.RepeatUnit.NONE;
+        Boolean repeat = task.mRepeatUnit != Task.RepeatUnit.NONE;
         repeatCheck.setChecked(repeat);
         SetRepeatVisibility(dlgView, repeat);
 
@@ -578,29 +576,29 @@ public class TaskListActivity
         // Here's a trick:  We cascade the OnClick listeners so we can extract
         // the dialog contents into the task before calling the second listener.
         final OnClickListener userListener = okListener;
-        final TaskDatabase.Task myTask = task;
+        final Task myTask = task;
         OnClickListener cascadedListener = new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				myTask.mName = nameEdit.getText().toString();
 				myTask.mDescription = descriptionEdit.getText().toString();
 				
-				myTask.mRepeatUnit = TaskDatabase.Task.RepeatUnit.NONE;
+				myTask.mRepeatUnit = Task.RepeatUnit.NONE;
 				if (repeatCheck.isChecked())
 				{
 					switch (repeatUnitSpinner.getSelectedItemPosition())
 					{
 					case 0:
-						myTask.mRepeatUnit = TaskDatabase.Task.RepeatUnit.DAYS;
+						myTask.mRepeatUnit = Task.RepeatUnit.DAYS;
 						break;
 					case 1:
-						myTask.mRepeatUnit = TaskDatabase.Task.RepeatUnit.WEEKS;
+						myTask.mRepeatUnit = Task.RepeatUnit.WEEKS;
 						break;
 					case 2:
-						myTask.mRepeatUnit = TaskDatabase.Task.RepeatUnit.MONTHS;
+						myTask.mRepeatUnit = Task.RepeatUnit.MONTHS;
 						break;
 					case 3:
-						myTask.mRepeatUnit = TaskDatabase.Task.RepeatUnit.YEARS;
+						myTask.mRepeatUnit = Task.RepeatUnit.YEARS;
 						break;
 					}
 					

@@ -23,15 +23,8 @@ package com.kunze.androidlocaltodo;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.Serializable;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
 
-import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -39,79 +32,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 public class TaskDatabase extends SQLiteOpenHelper {
-    
-    static public class Task implements Serializable
-    {
-        public static enum RepeatUnit { NONE, DAYS, WEEKS, MONTHS, YEARS };
-
-        public String     mName;
-        public String     mDescription;
-        public Calendar   mDueDate;
-        public Calendar   mCompletedDate;
-        public RepeatUnit mRepeatUnit;
-        public int        mRepeatTime;
-        public Boolean    mRepeatFromComplete;
-        public long       mID;
-        
-        public Task() {
-        	mName = "";
-        	mDescription = "";
-        	mDueDate = Calendar.getInstance();
-        	mCompletedDate = Calendar.getInstance();
-        	mCompletedDate.setTimeInMillis(0);
-        	mRepeatUnit = RepeatUnit.NONE;
-        	mRepeatTime = 1;
-        	mRepeatFromComplete = true;
-        	mID = 0;
-        }
-        
-        public Task(Task other)
-        {
-            mName = new String(other.mName);
-            mDescription = new String(other.mDescription);
-            mDueDate = (Calendar)other.mDueDate.clone();
-            mCompletedDate = (Calendar)other.mCompletedDate.clone();
-            mRepeatUnit = other.mRepeatUnit;
-            mRepeatTime = other.mRepeatTime;
-            mRepeatFromComplete = other.mRepeatFromComplete.booleanValue();
-            mID = other.mID;
-        }
-        
-        @Override
-        public boolean equals(Object other)
-        {
-            if (this == other)
-            {
-                return true;
-            }
-            else if (other == null)
-            {
-                return false;
-            }
-            else if (other instanceof Task)
-            {
-                Task otherTask = (Task)other;
-                if (mName.equals(otherTask.mName) &&
-                    mDescription.equals(otherTask.mDescription) && 
-                    mDueDate.equals(otherTask.mDueDate) && 
-                    mCompletedDate.equals(otherTask.mCompletedDate) && 
-                    mRepeatUnit.equals(otherTask.mRepeatUnit) && 
-                    mRepeatTime == otherTask.mRepeatTime && 
-                    mRepeatFromComplete.equals(otherTask.mRepeatFromComplete) &&
-                    mID == otherTask.mID)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        
-        @Override
-        public int hashCode()
-        {
-            return mName.hashCode() + (int)mID;
-        }
-    }
 
     private static final String DB_NAME		                 = "TASK_DATABASE";
     private static final int 	DB_VERSION	                 = 1;
@@ -135,8 +55,9 @@ public class TaskDatabase extends SQLiteOpenHelper {
                     DB_TASK_REPEAT_TIME + " INTEGER, " +
                     DB_TASK_REPEAT_FROM_COMPLETE + " INTEGER, " +
                     DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT);";
-    private static final String DB_WHERE = DB_TASK_COMPLETED_DATE + "= 0"; 
-    private static final String DB_ORDER_BY = DB_TASK_DUE_DATE + " ASC";             
+    private static final String DB_WHERE_NOT_COMPLETE = DB_TASK_COMPLETED_DATE + "= 0";
+    private static final String DB_WHERE_ID_EQUALS = DB_ID + "=";
+    private static final String DB_ORDER_BY = DB_TASK_DUE_DATE + " ASC";
 
     public TaskDatabase(Context context) 
     {
@@ -195,7 +116,7 @@ public class TaskDatabase extends SQLiteOpenHelper {
     public Cursor GetCursor()
     {
         SQLiteDatabase db = getReadableDatabase();
-        return db.query(DB_TABLE_NAME, null, DB_WHERE, null, null, null, DB_ORDER_BY);
+        return db.query(DB_TABLE_NAME, null, DB_WHERE_NOT_COMPLETE, null, null, null, DB_ORDER_BY);
     }
     
     public Task LoadTask(Cursor cursor)
@@ -218,7 +139,32 @@ public class TaskDatabase extends SQLiteOpenHelper {
         }
         return task;
     }
-    
+
+    public Task LoadTask(Long id)
+    {
+        Task task = new Task();
+        SQLiteDatabase db = getReadableDatabase();
+        String where = DB_WHERE_ID_EQUALS + Long.toString(id);
+        Cursor cursor = db.query(DB_TABLE_NAME, null, where,
+                                 null, null, null, null);
+        try
+        {
+            task.mName = cursor.getString(0);
+            task.mDescription = cursor.getString(1);
+            task.mDueDate = ConvertIntToDate(cursor.getInt(2));
+            task.mCompletedDate = ConvertIntToDate(cursor.getInt(3));
+            task.mRepeatUnit = Task.RepeatUnit.valueOf(cursor.getString(4));
+            task.mRepeatTime = cursor.getInt(5);
+            task.mRepeatFromComplete = cursor.getInt(6) == 1;
+            task.mID = cursor.getLong(7);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        return task;
+    }
+
     public void SaveTask(Task task)
     {
         SQLiteDatabase db = getWritableDatabase();
