@@ -149,6 +149,7 @@ public class TaskDatabase extends SQLiteOpenHelper {
                                  null, null, null, null);
         try
         {
+            cursor.moveToFirst();
             task.mName = cursor.getString(0);
             task.mDescription = cursor.getString(1);
             task.mDueDate = ConvertIntToDate(cursor.getInt(2));
